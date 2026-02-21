@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from './auth'
 
 interface GroupMember {
   userId: string
@@ -14,6 +15,7 @@ interface Group {
   name: string
   ownerId: string
   members: GroupMember[]
+  closed: boolean
   createdAt: string
 }
 
@@ -21,6 +23,16 @@ export const useGroupStore = defineStore('group', () => {
   const groups = ref<Group[]>([])
   const currentGroup = ref<Group | null>(null)
   const loading = ref(false)
+
+  const ownedGroups = computed(() => {
+    const authStore = useAuthStore()
+    return groups.value.filter((g) => g.ownerId === authStore.user?.id)
+  })
+
+  const invitedGroups = computed(() => {
+    const authStore = useAuthStore()
+    return groups.value.filter((g) => g.ownerId !== authStore.user?.id)
+  })
 
   async function fetchGroups() {
     loading.value = true
@@ -42,6 +54,28 @@ export const useGroupStore = defineStore('group', () => {
     const { data } = await api.post('/groups', { name })
     groups.value.unshift(data)
     return data
+  }
+
+  async function renameGroup(groupId: string, name: string) {
+    const { data } = await api.put(`/groups/${groupId}/rename`, { name })
+    currentGroup.value = data
+    const idx = groups.value.findIndex((g) => g.id === groupId)
+    if (idx !== -1) groups.value[idx] = data
+    return data
+  }
+
+  async function closeGroup(groupId: string, closed: boolean) {
+    const { data } = await api.put(`/groups/${groupId}/close`, { closed })
+    currentGroup.value = data
+    const idx = groups.value.findIndex((g) => g.id === groupId)
+    if (idx !== -1) groups.value[idx] = data
+    return data
+  }
+
+  async function deleteGroup(groupId: string) {
+    await api.delete(`/groups/${groupId}`)
+    groups.value = groups.value.filter((g) => g.id !== groupId)
+    if (currentGroup.value?.id === groupId) currentGroup.value = null
   }
 
   async function inviteUser(groupId: string, userId: string) {
@@ -69,7 +103,9 @@ export const useGroupStore = defineStore('group', () => {
 
   return {
     groups, currentGroup, loading,
+    ownedGroups, invitedGroups,
     fetchGroups, fetchGroup, createGroup,
+    renameGroup, closeGroup, deleteGroup,
     inviteUser, joinGroup, acceptMember, removeMember,
   }
 })

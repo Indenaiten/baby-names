@@ -24,6 +24,8 @@ const commentRepository = new MongoCommentRepository();
 // POST /api/groups/:gid/names
 router.post('/groups/:gid/names', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const group = await groupRepository.findById(req.params.gid);
+    if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden proponer nombres.' });
     const proposeName = new ProposeName(babyNameRepository, groupRepository);
     const name = await proposeName.execute({
       name: req.body.name,
@@ -84,6 +86,12 @@ router.delete('/names/:id', authMiddleware, async (req: AuthenticatedRequest, re
 // POST /api/names/:id/rate
 router.post('/names/:id/rate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Check if group is closed
+    const babyName = await babyNameRepository.findById(req.params.id);
+    if (babyName) {
+      const group = await groupRepository.findById(babyName.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden emitir votos.' });
+    }
     const rateName = new RateName(ratingRepository, babyNameRepository);
     const rating = await rateName.execute({
       nameId: req.params.id,
@@ -133,6 +141,12 @@ router.get('/names/:id/comments', authMiddleware, async (req: AuthenticatedReque
 // POST /api/names/:id/comments
 router.post('/names/:id/comments', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Check if group is closed
+    const nameForComment = await babyNameRepository.findById(req.params.id);
+    if (nameForComment) {
+      const group = await groupRepository.findById(nameForComment.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden añadir comentarios.' });
+    }
     const addComment = new AddComment(commentRepository);
     const comment = await addComment.execute({
       nameId: req.params.id,

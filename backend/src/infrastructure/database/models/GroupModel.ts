@@ -9,6 +9,7 @@ export interface IGroupDocument extends Document {
     status: string;
     joinedAt: Date;
   }[];
+  closed: boolean;
   createdAt: Date;
 }
 
@@ -27,6 +28,7 @@ const GroupSchema = new Schema<IGroupDocument>(
     name: { type: String, required: true, trim: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     members: [GroupMemberSchema],
+    closed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
