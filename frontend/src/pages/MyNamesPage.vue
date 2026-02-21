@@ -59,7 +59,7 @@
         <div
           v-for="rating in nameStore.myRatings"
           :key="rating.id"
-          class="card flex items-center gap-4 hover:border-gray-700 transition-all duration-200 cursor-pointer"
+          class="card flex items-center gap-4 hover:border-primary-500/30 hover:bg-primary-500/5 transition-all duration-300 cursor-pointer group"
           @click="openDetails(rating.nameId)"
         >
           <div class="flex-1">
@@ -77,10 +77,12 @@
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-primary-600/20 text-primary-300 flex items-center justify-center font-bold">
+            <div class="w-10 h-10 rounded-full bg-primary-600/20 text-primary-300 flex items-center justify-center font-bold shadow-inner">
               {{ rating.score }}
             </div>
-            <span class="text-gray-500 text-xs">💬 Detalle</span>
+            <div class="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 group-hover:bg-primary-500/10 group-hover:text-primary-400 transition-all shadow-sm">
+              👁️
+            </div>
           </div>
         </div>
       </div>

@@ -81,9 +81,13 @@
         </button>
         <span v-else class="text-xs text-green-400 shrink-0">✓ Votado</span>
 
-        <!-- Comment toggle -->
-        <button @click="toggleComments(name.id)" class="text-gray-500 hover:text-gray-300 transition-colors shrink-0">
-          💬
+        <!-- Detail toggle -->
+        <button 
+          @click="toggleComments(name.id)" 
+          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-400 hover:text-primary-400 hover:bg-primary-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+          title="Ver detalles y comentarios"
+        >
+          <span class="text-lg leading-none">👁️</span>
         </button>
       </div>
     </div>
