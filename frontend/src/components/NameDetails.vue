@@ -43,7 +43,6 @@
             <span class="text-sm text-gray-200 font-medium">{{ rating.userName || 'Anónimo' }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span v-if="rating.comment" class="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded" title="Tiene comentario">💬</span>
             <span class="text-sm font-bold text-primary-400 bg-primary-400/10 px-2 py-0.5 rounded-lg">{{ rating.score }}</span>
           </div>
         </div>

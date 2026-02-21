@@ -97,7 +97,6 @@ router.post('/names/:id/rate', authMiddleware, async (req: AuthenticatedRequest,
       nameId: req.params.id,
       userId: req.userId!,
       score: req.body.score,
-      comment: req.body.comment,
     });
     res.status(201).json(rating.toJSON());
   } catch (error: any) {

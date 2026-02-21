@@ -73,7 +73,7 @@
               <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-gray-800 px-1.5 py-0.5 rounded">
                 👤 {{ getNameFromRating(rating.nameId)?.proposerName || '...' }}
               </p>
-              <p class="text-xs text-gray-500 italic">Tu voto: "{{ rating.comment || rating.score }}"</p>
+              <p class="text-xs text-gray-500 italic">Tu voto: {{ rating.score }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3">

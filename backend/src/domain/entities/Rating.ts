@@ -4,7 +4,6 @@ export interface RatingProps {
   userId: string;
   userName?: string;
   score: number;
-  comment?: string;
   createdAt?: Date;
 }
 
@@ -14,7 +13,6 @@ export class Rating {
   public readonly userId: string;
   public readonly userName?: string;
   public readonly score: number;
-  public readonly comment: string;
   public readonly createdAt: Date;
 
   private constructor(props: RatingProps) {
@@ -23,7 +21,6 @@ export class Rating {
     this.userId = props.userId;
     this.userName = props.userName;
     this.score = props.score;
-    this.comment = props.comment || '';
     this.createdAt = props.createdAt || new Date();
   }
 
@@ -47,7 +44,6 @@ export class Rating {
       userId: this.userId,
       userName: this.userName,
       score: this.score,
-      comment: this.comment,
       createdAt: this.createdAt,
     };
   }

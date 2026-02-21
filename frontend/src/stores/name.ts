@@ -20,7 +20,6 @@ interface Rating {
   userId: string
   userName?: string
   score: number
-  comment: string
   createdAt: string
   name?: BabyName // Added for myRatings if backend provides it, or to be filled
 }
@@ -78,8 +77,8 @@ export const useNameStore = defineStore('name', () => {
     myNames.value = myNames.value.filter((n) => n.id !== nameId)
   }
 
-  async function rateName(nameId: string, score: number, comment: string) {
-    const { data } = await api.post(`/names/${nameId}/rate`, { score, comment })
+  async function rateName(nameId: string, score: number) {
+    const { data } = await api.post(`/names/${nameId}/rate`, { score })
     unratedNames.value = unratedNames.value.filter((n) => n.id !== nameId)
     // Update the name's average in local state
     const name = names.value.find((n) => n.id === nameId)

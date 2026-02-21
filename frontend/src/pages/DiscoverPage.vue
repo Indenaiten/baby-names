@@ -68,13 +68,6 @@
         </div>
       </div>
 
-      <!-- Comment -->
-      <textarea
-        v-model="comment"
-        class="input-field mt-4"
-        rows="2"
-        placeholder="Comentario opcional..."
-      />
 
       <!-- Actions -->
       <div class="flex gap-3 mt-4">
@@ -99,7 +92,6 @@ const gid = computed(() => route.params.gid as string)
 const loading = ref(true)
 const currentIndex = ref(0)
 const score = ref(0)
-const comment = ref('')
 const submitting = ref(false)
 const totalUnrated = ref(0)
 const votedCount = ref(0)
@@ -121,10 +113,9 @@ async function submitVote() {
   if (!score.value || !currentName.value) return
   submitting.value = true
   try {
-    await nameStore.rateName(currentName.value.id, score.value, comment.value)
+    await nameStore.rateName(currentName.value.id, score.value)
     votedCount.value++
     score.value = 0
-    comment.value = ''
   } finally {
     submitting.value = false
   }
@@ -133,7 +124,6 @@ async function submitVote() {
 function skip() {
   currentIndex.value++
   score.value = 0
-  comment.value = ''
 }
 
 function genderBadgeClass(gender: string) {

@@ -6,7 +6,6 @@ export interface RateNameDTO {
   nameId: string;
   userId: string;
   score: number;
-  comment?: string;
 }
 
 export class RateName {
@@ -26,7 +25,6 @@ export class RateName {
       nameId: dto.nameId,
       userId: dto.userId,
       score: dto.score,
-      comment: dto.comment || '',
     });
 
     const created = await this.ratingRepository.create(rating);

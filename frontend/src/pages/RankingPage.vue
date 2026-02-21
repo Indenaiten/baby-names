@@ -112,12 +112,6 @@
           </button>
         </div>
 
-        <textarea
-          v-model="ratingComment"
-          class="input-field mb-4"
-          rows="3"
-          placeholder="Comentario opcional..."
-        />
 
         <div class="flex gap-3">
           <button @click="ratingModal = null" class="btn-secondary flex-1">Cancelar</button>
@@ -190,7 +184,6 @@ const selectedGender = ref('')
 
 const ratingModal = ref<any>(null)
 const ratingScore = ref(0)
-const ratingComment = ref('')
 const submitting = ref(false)
 
 const showCommentsFor = ref<string | null>(null)
@@ -237,14 +230,13 @@ function genderLabel(gender: string) {
 function openRating(name: any) {
   ratingModal.value = name
   ratingScore.value = 0
-  ratingComment.value = ''
 }
 
 async function submitRating() {
   if (!ratingScore.value || !ratingModal.value) return
   submitting.value = true
   try {
-    await nameStore.rateName(ratingModal.value.id, ratingScore.value, ratingComment.value)
+    await nameStore.rateName(ratingModal.value.id, ratingScore.value)
     ratedNameIds.value.add(ratingModal.value.id)
     ratingModal.value = null
   } finally {

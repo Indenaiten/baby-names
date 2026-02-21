@@ -14,7 +14,6 @@ export class MongoRatingRepository implements IRatingRepository {
       userId: userObj._id.toString(),
       userName: userObj.username,
       score: doc.score,
-      comment: doc.comment,
       createdAt: doc.createdAt,
     });
   }
@@ -63,7 +62,6 @@ export class MongoRatingRepository implements IRatingRepository {
         nameId: doc.nameId.toString(),
         userId: doc.userId.toString(),
         score: doc.score,
-        comment: doc.comment,
         createdAt: doc.createdAt,
       })
     );
@@ -74,7 +72,6 @@ export class MongoRatingRepository implements IRatingRepository {
       nameId: rating.nameId,
       userId: rating.userId,
       score: rating.score,
-      comment: rating.comment,
     });
     return this.toDomain(doc);
   }
