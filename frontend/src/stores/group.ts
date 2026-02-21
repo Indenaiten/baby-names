@@ -41,7 +41,19 @@ export const useGroupStore = defineStore('group', () => {
 
   const invitedGroups = computed(() => {
     const authStore = useAuthStore()
-    return groups.value.filter((g) => g.ownerId !== authStore.user?.id)
+    return groups.value.filter((g) => {
+      if (g.ownerId === authStore.user?.id) return false
+      const member = g.members.find((m) => m.userId === authStore.user?.id)
+      return member && member.status === 'active'
+    })
+  })
+
+  const pendingInvitations = computed(() => {
+    const authStore = useAuthStore()
+    return groups.value.filter((g) => {
+      const member = g.members.find((m) => m.userId === authStore.user?.id)
+      return member && member.status === 'invited'
+    })
   })
 
   async function fetchGroups() {
@@ -111,6 +123,23 @@ export const useGroupStore = defineStore('group', () => {
     return data
   }
 
+  async function respondToInvitation(groupId: string, action: 'accept' | 'reject') {
+    const { data } = await api.post(`/groups/${groupId}/respond`, { action })
+    if (action === 'reject') {
+      groups.value = groups.value.filter((g) => g.id !== groupId)
+    } else {
+      const idx = groups.value.findIndex((g) => g.id === groupId)
+      if (idx !== -1) groups.value[idx] = data
+    }
+    return data
+  }
+
+  async function leaveGroup(groupId: string) {
+    await api.post(`/groups/${groupId}/leave`)
+    groups.value = groups.value.filter((g) => g.id !== groupId)
+    if (currentGroup.value?.id === groupId) currentGroup.value = null
+  }
+
   async function searchUsers(query: string): Promise<UserInfo[]> {
     const { data } = await api.get('/users/search', { params: { q: query } })
     return data
@@ -135,10 +164,11 @@ export const useGroupStore = defineStore('group', () => {
 
   return {
     groups, currentGroup, loading,
-    ownedGroups, invitedGroups, memberDetails,
+    ownedGroups, invitedGroups, pendingInvitations, memberDetails,
     fetchGroups, fetchGroup, createGroup,
     renameGroup, closeGroup, deleteGroup,
     inviteUser, joinGroup, acceptMember, removeMember,
+    respondToInvitation, leaveGroup,
     searchUsers, loadMemberDetails, getMemberInfo,
   }
 })

@@ -170,3 +170,41 @@ export class DeleteGroup {
   }
 }
 
+export class RespondToInvitation {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, userId: string, action: 'accept' | 'reject'): Promise<Group | null> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    const member = group.members.find((m) => m.userId === userId);
+    if (!member || member.status !== MemberStatus.INVITED) {
+      throw new Error('No pending invitation found');
+    }
+    if (action === 'accept') {
+      const updated = await this.groupRepository.updateMember(groupId, userId, {
+        status: MemberStatus.ACTIVE,
+      });
+      if (!updated) throw new Error('Failed to accept invitation');
+      return updated;
+    } else {
+      const updated = await this.groupRepository.removeMember(groupId, userId);
+      if (!updated) throw new Error('Failed to reject invitation');
+      return updated;
+    }
+  }
+}
+
+export class LeaveGroup {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, userId: string): Promise<void> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    if (group.isOwner(userId)) throw new Error('The group owner cannot leave. Transfer ownership or delete the group.');
+    const member = group.members.find((m) => m.userId === userId);
+    if (!member) throw new Error('You are not a member of this group');
+    const updated = await this.groupRepository.removeMember(groupId, userId);
+    if (!updated) throw new Error('Failed to leave group');
+  }
+}
+

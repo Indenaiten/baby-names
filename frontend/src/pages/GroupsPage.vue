@@ -169,6 +169,46 @@
     </div>
 
     <div v-else>
+      <!-- Pending invitations section -->
+      <div v-if="groupStore.pendingInvitations.length > 0" class="mb-10">
+        <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <span class="text-xl">✉️</span> Invitaciones pendientes
+          <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">{{ groupStore.pendingInvitations.length }}</span>
+        </h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="group in groupStore.pendingInvitations"
+            :key="group.id"
+            class="card border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-transparent"
+          >
+            <div class="flex items-start justify-between mb-3">
+              <h3 class="font-semibold text-lg text-white">{{ group.name }}</h3>
+              <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full shrink-0">✉️ Invitación</span>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-gray-400 mb-4">
+              <span>👥 {{ getActiveCount(group) }} miembros</span>
+              <span>📅 {{ new Date(group.createdAt).toLocaleDateString('es') }}</span>
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="handleRespondInvitation(group.id, 'accept')"
+                class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-green-600/20 text-green-400 hover:bg-green-600/30 transition-all duration-200"
+                :disabled="responding"
+              >
+                ✅ Aceptar
+              </button>
+              <button
+                @click="handleRespondInvitation(group.id, 'reject')"
+                class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all duration-200"
+                :disabled="responding"
+              >
+                ❌ Rechazar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Owned groups section -->
       <div v-if="groupStore.ownedGroups.length > 0" class="mb-10">
         <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -224,22 +264,29 @@
           <div
             v-for="group in groupStore.invitedGroups"
             :key="group.id"
-            @click="selectGroup(group)"
             class="card cursor-pointer hover:border-emerald-500/50 hover:shadow-emerald-500/10 transition-all duration-300"
             :class="{ 'opacity-60': group.closed }"
           >
             <div class="flex items-start justify-between">
-              <h3 class="font-semibold text-lg text-white">
+              <h3 @click="selectGroup(group)" class="font-semibold text-lg text-white cursor-pointer">
                 {{ group.name }}
               </h3>
               <div class="flex items-center gap-1.5">
                 <span v-if="group.closed" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">🔒 Cerrado</span>
-                <span class="text-xs bg-emerald-600/20 text-emerald-300 px-2 py-1 rounded-full">🤝 Invitado</span>
+                <span class="text-xs bg-emerald-600/20 text-emerald-300 px-2 py-1 rounded-full">🤝 Miembro</span>
               </div>
             </div>
-            <div class="mt-3 flex items-center gap-4 text-sm text-gray-400">
+            <div @click="selectGroup(group)" class="mt-3 flex items-center gap-4 text-sm text-gray-400">
               <span>👥 {{ getActiveCount(group) }} miembros</span>
               <span>📅 {{ new Date(group.createdAt).toLocaleDateString('es') }}</span>
+            </div>
+            <div class="mt-3 pt-3 border-t border-gray-800/50">
+              <button
+                @click.stop="handleLeaveGroup(group)"
+                class="text-xs text-red-400 hover:text-red-300 font-medium transition-colors"
+              >
+                🚪 Salir del grupo
+              </button>
             </div>
           </div>
         </div>
@@ -261,6 +308,7 @@ const router = useRouter()
 const showCreate = ref(false)
 const newGroupName = ref('')
 const creating = ref(false)
+const responding = ref(false)
 
 // Settings modal state
 const settingsGroup = ref<any>(null)
@@ -420,5 +468,25 @@ function getActiveCount(group: any) {
 
 function getPendingCount(group: any) {
   return group.members.filter((m: any) => m.status === 'pending' || m.status === 'invited').length
+}
+
+async function handleRespondInvitation(groupId: string, action: 'accept' | 'reject') {
+  responding.value = true
+  try {
+    await groupStore.respondToInvitation(groupId, action)
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al responder')
+  } finally {
+    responding.value = false
+  }
+}
+
+async function handleLeaveGroup(group: any) {
+  if (!confirm(`¿Seguro que quieres salir del grupo "${group.name}"?`)) return
+  try {
+    await groupStore.leaveGroup(group.id)
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al salir del grupo')
+  }
 }
 </script>
