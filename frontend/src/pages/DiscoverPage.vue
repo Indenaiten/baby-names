@@ -36,10 +36,15 @@
             {{ genderLabel(currentName.gender) }}
           </span>
           <h2 class="text-4xl font-display font-bold text-white mb-2">{{ currentName.name }}</h2>
-          <p class="text-gray-500 text-sm">
-            {{ currentName.totalRatings }} votos ·
-            {{ currentName.averageScore > 0 ? `${currentName.averageScore.toFixed(1)} ⭐` : 'Sin votos' }}
-          </p>
+          <div class="flex flex-col items-center gap-1">
+            <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-white/5 px-2 py-0.5 rounded backdrop-blur">
+              👤 Propuesto por {{ currentName.proposerName || '...' }}
+            </p>
+            <p class="text-gray-500 text-sm">
+              {{ currentName.totalRatings }} votos ·
+              {{ currentName.averageScore > 0 ? `${currentName.averageScore.toFixed(1)} ⭐` : 'Sin votos' }}
+            </p>
+          </div>
         </div>
       </div>
 

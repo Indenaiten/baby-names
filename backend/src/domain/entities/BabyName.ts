@@ -9,6 +9,7 @@ export interface BabyNameProps {
   name: string;
   gender: Gender;
   proposedBy: string; // userId
+  proposerName?: string;
   groupId: string;
   averageScore?: number;
   totalRatings?: number;
@@ -20,6 +21,7 @@ export class BabyName {
   public readonly name: string;
   public readonly gender: Gender;
   public readonly proposedBy: string;
+  public readonly proposerName?: string;
   public readonly groupId: string;
   public averageScore: number;
   public totalRatings: number;
@@ -30,6 +32,7 @@ export class BabyName {
     this.name = props.name;
     this.gender = props.gender;
     this.proposedBy = props.proposedBy;
+    this.proposerName = props.proposerName;
     this.groupId = props.groupId;
     this.averageScore = props.averageScore || 0;
     this.totalRatings = props.totalRatings || 0;
@@ -63,6 +66,7 @@ export class BabyName {
       name: this.name,
       gender: this.gender,
       proposedBy: this.proposedBy,
+      proposerName: this.proposerName,
       groupId: this.groupId,
       averageScore: this.averageScore,
       totalRatings: this.totalRatings,

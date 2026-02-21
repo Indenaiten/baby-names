@@ -56,7 +56,12 @@
               {{ genderLabel(name.gender) }}
             </span>
           </div>
-          <p class="text-sm text-gray-500">{{ name.totalRatings }} votos</p>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-gray-800 px-1.5 py-0.5 rounded">
+              👤 {{ name.proposerName || '...' }}
+            </p>
+            <p class="text-xs text-gray-500">{{ name.totalRatings }} votos</p>
+          </div>
         </div>
 
         <!-- Score -->
@@ -119,50 +124,41 @@
       </div>
     </div>
 
-    <!-- Comments section -->
+    <!-- Details/Comments section -->
     <div v-if="showCommentsFor" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" @click.self="showCommentsFor = null">
-      <div class="card w-full sm:max-w-lg max-h-[80vh] flex flex-col animate-slide-up rounded-b-none sm:rounded-b-2xl">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-lg">Comentarios</h3>
-          <button @click="showCommentsFor = null" class="text-gray-400 hover:text-white">✕</button>
+      <div class="card w-full sm:max-w-lg max-h-[85vh] flex flex-col animate-slide-up rounded-b-none sm:rounded-b-2xl p-0 overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-800">
+          <h3 class="font-bold text-xl text-white">
+            {{ nameStore.names.find(n => n.id === showCommentsFor)?.name }}
+          </h3>
+          <button @click="showCommentsFor = null" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-3 mb-4">
-          <div v-if="nameStore.comments.length === 0" class="text-center py-8 text-gray-500">
-            No hay comentarios todavía
-          </div>
-          <div
-            v-for="c in rootComments"
-            :key="c.id"
-            class="space-y-2"
-          >
-            <div class="bg-gray-800/50 rounded-xl p-3">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-medium text-primary-300">{{ c.userId.slice(-6) }}</span>
-                <span class="text-xs text-gray-600">{{ new Date(c.createdAt).toLocaleDateString('es') }}</span>
-              </div>
-              <p class="text-sm text-gray-200">{{ c.text }}</p>
-              <button @click="replyTo = c.id" class="text-xs text-gray-500 hover:text-primary-400 mt-1">Responder</button>
-            </div>
-            <!-- Replies -->
-            <div v-for="r in getReplies(c.id)" :key="r.id" class="ml-6 bg-gray-800/30 rounded-xl p-3">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-medium text-primary-300">{{ r.userId.slice(-6) }}</span>
-                <span class="text-xs text-gray-600">{{ new Date(r.createdAt).toLocaleDateString('es') }}</span>
-              </div>
-              <p class="text-sm text-gray-300">{{ r.text }}</p>
-            </div>
-          </div>
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto p-4 modal-scroll-area custom-scrollbar">
+          <NameDetails 
+            :name="nameStore.names.find(n => n.id === showCommentsFor)" 
+            :ratings="nameStore.ratings"
+            :comments="nameStore.comments"
+            :loadingRatings="loadingRatings"
+            :loadingComments="loadingComments"
+            @reply="handleReply"
+          />
         </div>
 
-        <form @submit.prevent="submitComment" class="flex gap-2">
-          <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
-          <button type="submit" class="btn-primary px-4">→</button>
-        </form>
-        <p v-if="replyTo" class="text-xs text-gray-500 mt-1">
-          Respondiendo a comentario
-          <button @click="replyTo = null" class="text-primary-400 ml-1">Cancelar</button>
-        </p>
+        <!-- Footer -->
+        <div class="p-4 bg-gray-900/50 border-t border-gray-800">
+          <form @submit.prevent="submitComment" class="flex gap-2">
+            <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
+            <button type="submit" class="btn-primary px-4 shadow-lg shadow-primary-500/20">→</button>
+          </form>
+          <p v-if="replyTo" class="text-[10px] text-gray-500 mt-2 flex items-center gap-2">
+            <span class="w-1 h-1 rounded-full bg-primary-500"></span>
+            Respondiendo a comentario
+            <button @click="replyTo = null" class="text-primary-400 font-bold hover:underline">Cancelar</button>
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -252,11 +248,34 @@ async function submitRating() {
   }
 }
 
-function toggleComments(nameId: string) {
+// Comment toggle
+const loadingRatings = ref(false)
+const loadingComments = ref(false)
+
+async function toggleComments(nameId: string) {
   showCommentsFor.value = nameId
   replyTo.value = null
   commentText.value = ''
-  nameStore.fetchComments(nameId)
+  
+  loadingRatings.value = true
+  loadingComments.value = true
+  
+  try {
+    await Promise.all([
+      nameStore.fetchRatings(nameId),
+      nameStore.fetchComments(nameId)
+    ])
+  } finally {
+    loadingRatings.value = false
+    loadingComments.value = false
+  }
+}
+
+function handleReply(comment: any) {
+  replyTo.value = comment.id
+  // Scroll to bottom of modal to focus input
+  const modalBody = document.querySelector('.modal-scroll-area')
+  if (modalBody) modalBody.scrollTop = modalBody.scrollHeight
 }
 
 async function submitComment() {
@@ -264,5 +283,12 @@ async function submitComment() {
   await nameStore.addComment(showCommentsFor.value, commentText.value, replyTo.value || undefined)
   commentText.value = ''
   replyTo.value = null
+}
+</script>
+
+<script lang="ts">
+import NameDetails from '@/components/NameDetails.vue'
+export default {
+  components: { NameDetails }
 }
 </script>

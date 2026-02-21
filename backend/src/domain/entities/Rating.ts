@@ -2,6 +2,7 @@ export interface RatingProps {
   id?: string;
   nameId: string;
   userId: string;
+  userName?: string;
   score: number;
   comment?: string;
   createdAt?: Date;
@@ -11,6 +12,7 @@ export class Rating {
   public readonly id: string;
   public readonly nameId: string;
   public readonly userId: string;
+  public readonly userName?: string;
   public readonly score: number;
   public readonly comment: string;
   public readonly createdAt: Date;
@@ -19,6 +21,7 @@ export class Rating {
     this.id = props.id || '';
     this.nameId = props.nameId;
     this.userId = props.userId;
+    this.userName = props.userName;
     this.score = props.score;
     this.comment = props.comment || '';
     this.createdAt = props.createdAt || new Date();
@@ -42,6 +45,7 @@ export class Rating {
       id: this.id,
       nameId: this.nameId,
       userId: this.userId,
+      userName: this.userName,
       score: this.score,
       comment: this.comment,
       createdAt: this.createdAt,

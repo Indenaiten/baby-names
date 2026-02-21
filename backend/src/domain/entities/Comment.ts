@@ -2,6 +2,7 @@ export interface CommentProps {
   id?: string;
   nameId: string;
   userId: string;
+  userName?: string;
   text: string;
   parentId?: string | null;
   createdAt?: Date;
@@ -11,6 +12,7 @@ export class Comment {
   public readonly id: string;
   public readonly nameId: string;
   public readonly userId: string;
+  public readonly userName?: string;
   public readonly text: string;
   public readonly parentId: string | null;
   public readonly createdAt: Date;
@@ -19,6 +21,7 @@ export class Comment {
     this.id = props.id || '';
     this.nameId = props.nameId;
     this.userId = props.userId;
+    this.userName = props.userName;
     this.text = props.text;
     this.parentId = props.parentId || null;
     this.createdAt = props.createdAt || new Date();
@@ -46,6 +49,7 @@ export class Comment {
       id: this.id,
       nameId: this.nameId,
       userId: this.userId,
+      userName: this.userName,
       text: this.text,
       parentId: this.parentId,
       createdAt: this.createdAt,

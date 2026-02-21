@@ -7,6 +7,7 @@ interface BabyName {
   name: string
   gender: 'boy' | 'girl' | 'unisex'
   proposedBy: string
+  proposerName?: string
   groupId: string
   averageScore: number
   totalRatings: number
@@ -17,15 +18,18 @@ interface Rating {
   id: string
   nameId: string
   userId: string
+  userName?: string
   score: number
   comment: string
   createdAt: string
+  name?: BabyName // Added for myRatings if backend provides it, or to be filled
 }
 
 interface Comment {
   id: string
   nameId: string
   userId: string
+  userName?: string
   text: string
   parentId: string | null
   createdAt: string
