@@ -1,0 +1,98 @@
+import { Rating } from '../../domain/entities/Rating';
+import { IRatingRepository } from '../../domain/repositories/IRatingRepository';
+import { RatingModel } from '../database/models/RatingModel';
+
+export class MongoRatingRepository implements IRatingRepository {
+  private toDomain(doc: any): Rating {
+    return Rating.create({
+      id: doc._id.toString(),
+      nameId: doc.nameId.toString(),
+      userId: doc.userId.toString(),
+      score: doc.score,
+      comment: doc.comment,
+      createdAt: doc.createdAt,
+    });
+  }
+
+  async findById(id: string): Promise<Rating | null> {
+    const doc = await RatingModel.findById(id);
+    if (!doc) return null;
+    return this.toDomain(doc);
+  }
+
+  async findByNameId(nameId: string): Promise<Rating[]> {
+    const docs = await RatingModel.find({ nameId }).sort({ createdAt: -1 });
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async findByUserId(userId: string): Promise<Rating[]> {
+    const docs = await RatingModel.find({ userId }).sort({ createdAt: -1 });
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async findByUserAndName(userId: string, nameId: string): Promise<Rating | null> {
+    const doc = await RatingModel.findOne({ userId, nameId });
+    if (!doc) return null;
+    return this.toDomain(doc);
+  }
+
+  async findByUserInGroup(userId: string, groupId: string): Promise<Rating[]> {
+    const docs = await RatingModel.aggregate([
+      { $match: { userId: require('mongoose').Types.ObjectId.createFromHexString(userId) } },
+      {
+        $lookup: {
+          from: 'babynames',
+          localField: 'nameId',
+          foreignField: '_id',
+          as: 'name',
+        },
+      },
+      { $unwind: '$name' },
+      { $match: { 'name.groupId': require('mongoose').Types.ObjectId.createFromHexString(groupId) } },
+      { $sort: { createdAt: -1 } },
+    ]);
+
+    return docs.map((doc: any) =>
+      Rating.create({
+        id: doc._id.toString(),
+        nameId: doc.nameId.toString(),
+        userId: doc.userId.toString(),
+        score: doc.score,
+        comment: doc.comment,
+        createdAt: doc.createdAt,
+      })
+    );
+  }
+
+  async create(rating: Rating): Promise<Rating> {
+    const doc = await RatingModel.create({
+      nameId: rating.nameId,
+      userId: rating.userId,
+      score: rating.score,
+      comment: rating.comment,
+    });
+    return this.toDomain(doc);
+  }
+
+  async getAverageScore(nameId: string): Promise<{ average: number; count: number }> {
+    const result = await RatingModel.aggregate([
+      { $match: { nameId: require('mongoose').Types.ObjectId.createFromHexString(nameId) } },
+      {
+        $group: {
+          _id: null,
+          average: { $avg: '$score' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return { average: 0, count: 0 };
+    }
+
+    return {
+      average: Math.round(result[0].average * 100) / 100,
+      count: result[0].count,
+    };
+  }
+}

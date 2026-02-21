@@ -1,0 +1,48 @@
+import { IUserRepository } from '../../domain/repositories/IUserRepository';
+import { AuthService } from '../../infrastructure/auth/AuthService';
+
+export interface LoginDTO {
+  identifier: string; // email or username
+  password: string;
+}
+
+export interface LoginResult {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+  };
+}
+
+export class LoginUser {
+  constructor(private userRepository: IUserRepository) {}
+
+  async execute(dto: LoginDTO): Promise<LoginResult> {
+    const user = await this.userRepository.findByEmailOrUsername(dto.identifier);
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    const isValid = await AuthService.comparePassword(dto.password, user.passwordHash);
+    if (!isValid) {
+      throw new Error('Invalid credentials');
+    }
+
+    const token = AuthService.generateToken({
+      userId: user.id,
+      role: user.role,
+    });
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
+    };
+  }
+}
