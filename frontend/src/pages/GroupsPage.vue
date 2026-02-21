@@ -144,20 +144,30 @@
           <div
             v-for="group in groupStore.ownedGroups"
             :key="group.id"
-            class="card cursor-pointer hover:border-primary-500/50 hover:shadow-primary-500/10 transition-all duration-300 relative"
+            class="card cursor-pointer hover:border-primary-500/50 hover:shadow-primary-500/10 transition-all duration-300"
             :class="{ 'opacity-60 border-amber-500/20': group.closed }"
           >
-            <div @click="selectGroup(group)" class="flex-1">
-              <div class="flex items-start justify-between">
-                <h3 class="font-semibold text-lg text-white">
-                  {{ group.name }}
-                </h3>
-                <div class="flex items-center gap-1.5">
-                  <span v-if="group.closed" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">🔒 Cerrado</span>
-                  <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">👑 Propietario</span>
-                </div>
-              </div>
-              <div class="mt-3 flex items-center gap-4 text-sm text-gray-400">
+            <!-- Header: name + settings -->
+            <div class="flex items-center gap-2 mb-2">
+              <h3 @click="selectGroup(group)" class="font-semibold text-lg text-white flex-1 min-w-0 truncate">
+                {{ group.name }}
+              </h3>
+              <button
+                @click.stop="openSettings(group)"
+                class="w-8 h-8 rounded-lg bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors text-sm shrink-0"
+                title="Administrar grupo"
+              >
+                ⚙️
+              </button>
+            </div>
+            <!-- Badges -->
+            <div @click="selectGroup(group)" class="flex flex-wrap gap-1.5 mb-3">
+              <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">👑 Propietario</span>
+              <span v-if="group.closed" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">🔒 Cerrado</span>
+            </div>
+            <!-- Info -->
+            <div @click="selectGroup(group)">
+              <div class="flex items-center gap-4 text-sm text-gray-400">
                 <span>👥 {{ getActiveCount(group) }} miembros</span>
                 <span>📅 {{ new Date(group.createdAt).toLocaleDateString('es') }}</span>
               </div>
@@ -167,14 +177,6 @@
                 </span>
               </div>
             </div>
-            <!-- Settings button -->
-            <button
-              @click.stop="openSettings(group)"
-              class="absolute top-4 right-4 w-8 h-8 rounded-lg bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center text-gray-400 hover:text-white transition-colors text-sm"
-              title="Administrar grupo"
-            >
-              ⚙️
-            </button>
           </div>
         </div>
       </div>
