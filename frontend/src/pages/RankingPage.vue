@@ -5,6 +5,14 @@
         <h1 class="text-3xl font-display font-bold text-white">🏆 Ranking</h1>
         <p class="text-gray-400 mt-1">Los nombres mejor valorados</p>
       </div>
+      <button
+        v-if="canExport"
+        @click="handleExport"
+        class="btn-secondary flex items-center gap-2 py-2.5 px-5 h-fit shadow-lg shadow-gray-900/10 border-gray-700/50"
+      >
+        <span class="text-lg">📥</span>
+        <span>Exportar JSON</span>
+      </button>
     </div>
 
     <!-- Gender filter tabs -->
@@ -80,6 +88,16 @@
           Votar
         </button>
         <span v-else class="text-xs text-green-400 shrink-0">✓ Votado</span>
+
+        <!-- Delete button (for proposer, group owner or root) -->
+        <button
+          v-if="canDelete(name)"
+          @click="handleDeleteName(name)"
+          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+          title="Eliminar nombre"
+        >
+          <span class="text-lg leading-none">🗑️</span>
+        </button>
 
         <!-- Detail toggle -->
         <button 
@@ -167,10 +185,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
 import { useGroupStore } from '@/stores/group'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const nameStore = useNameStore()
 const groupStore = useGroupStore()
+const authStore = useAuthStore()
 
 const gid = computed(() => route.params.gid as string)
 
@@ -202,6 +222,18 @@ function getReplies(parentId: string) {
 function hasRated(nameId: string) {
   return ratedNameIds.value.has(nameId)
 }
+
+function canDelete(name: any) {
+  if (!authStore.user) return false
+  if (authStore.isRoot) return true
+  if (name.proposedBy === authStore.user.id) return true
+  return groupStore.currentGroup?.ownerId === authStore.user.id
+}
+
+const canExport = computed(() => {
+  if (!authStore.user || !groupStore.currentGroup) return false
+  return authStore.isRoot || groupStore.currentGroup.ownerId === authStore.user.id
+})
 
 onMounted(async () => {
   if (!groupStore.currentGroup || groupStore.currentGroup.id !== gid.value) {
@@ -279,6 +311,31 @@ async function submitComment() {
   await nameStore.addComment(showCommentsFor.value, commentText.value, replyTo.value || undefined)
   commentText.value = ''
   replyTo.value = null
+}
+
+async function handleDeleteName(name: any) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar "${name.name}"? Esta acción no se puede deshacer.`)) return
+  
+  try {
+    await nameStore.deleteName(name.id)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al eliminar el nombre')
+  }
+}
+
+async function handleExport() {
+  try {
+    const data = await nameStore.exportNames(gid.value)
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ranking-${groupStore.currentGroup?.name || 'baby-names'}-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al exportar los nombres')
+  }
 }
 </script>
 

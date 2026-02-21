@@ -44,6 +44,14 @@
           <div class="score-pill" v-if="name.averageScore > 0">
             ⭐ {{ name.averageScore.toFixed(1) }}
           </div>
+          <!-- Delete button -->
+          <button
+            @click="handleDeleteName(name)"
+            class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+            title="Eliminar nombre"
+          >
+            <span class="text-lg leading-none">🗑️</span>
+          </button>
         </div>
       </div>
     </div>
@@ -181,6 +189,16 @@ async function submitComment() {
   await nameStore.addComment(selectedNameId.value, commentText.value, replyTo.value || undefined)
   commentText.value = ''
   replyTo.value = null
+}
+
+async function handleDeleteName(name: any) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar "${name.name}"? Esta acción no se puede deshacer.`)) return
+  
+  try {
+    await nameStore.deleteName(name.id)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al eliminar el nombre')
+  }
 }
 
 function genderBadgeClass(gender: string) {

@@ -5,6 +5,7 @@ import {
   GetNamesByUser,
   GetUnratedNames,
   DeleteName,
+  ExportNames,
 } from '../../application/use-cases/NameUseCases';
 import { RateName, GetRatingsByName, GetUserRatingsInGroup } from '../../application/use-cases/RatingUseCases';
 import { AddComment, GetCommentsByName } from '../../application/use-cases/CommentUseCases';
@@ -76,10 +77,22 @@ router.get('/groups/:gid/names/unrated', authMiddleware, async (req: Authenticat
 router.delete('/names/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const deleteName = new DeleteName(babyNameRepository, groupRepository);
-    await deleteName.execute(req.params.id, req.userId!);
+    await deleteName.execute(req.params.id, req.userId!, req.userRole);
     res.json({ message: 'Name deleted' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// GET /api/groups/:gid/export
+router.get('/groups/:gid/export', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const exportNames = new ExportNames(babyNameRepository, groupRepository);
+    const names = await exportNames.execute(req.params.gid, req.userId!, req.userRole);
+    res.json(names.map((n: any) => n.toJSON()));
+  } catch (error: any) {
+    const status = error.message.includes('Only') ? 403 : 400;
+    res.status(status).json({ error: error.message });
   }
 });
 

@@ -111,9 +111,14 @@ export const useNameStore = defineStore('name', () => {
     return data
   }
 
+  async function exportNames(groupId: string) {
+    const { data } = await api.get(`/groups/${groupId}/export`)
+    return data
+  }
+
   return {
     names, myNames, unratedNames, ratings, myRatings, comments, loading,
     fetchNames, fetchMyNames, fetchUnratedNames, proposeName, deleteName,
-    rateName, fetchRatings, fetchMyRatings, fetchComments, addComment,
+    rateName, fetchRatings, fetchMyRatings, fetchComments, addComment, exportNames,
   }
 })
