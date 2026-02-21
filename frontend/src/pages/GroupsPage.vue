@@ -70,39 +70,73 @@
             </button>
           </div>
 
-          <!-- Invite input -->
-          <div v-if="showInvite" class="mb-3 flex gap-2">
-            <input v-model="inviteUserId" class="input-field flex-1 text-sm" placeholder="ID del usuario a invitar" />
-            <button @click="handleInvite" class="btn-primary text-sm px-3" :disabled="!inviteUserId">Invitar</button>
+          <!-- Invite search autocomplete -->
+          <div v-if="showInvite" class="mb-3 relative">
+            <input
+              v-model="searchQuery"
+              @input="handleSearch"
+              class="input-field text-sm w-full"
+              placeholder="Buscar por nombre, email o usuario..."
+              autocomplete="off"
+            />
+            <!-- Search results dropdown -->
+            <div
+              v-if="searchResults.length > 0"
+              class="absolute z-10 left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl shadow-xl max-h-48 overflow-y-auto"
+            >
+              <button
+                v-for="user in searchResults"
+                :key="user.id"
+                @click="handleInviteUser(user)"
+                class="w-full text-left px-3 py-2.5 hover:bg-gray-700/50 transition-colors flex items-center justify-between gap-2 border-b border-gray-700/50 last:border-b-0"
+              >
+                <div class="min-w-0">
+                  <p class="text-sm text-white font-medium truncate">
+                    {{ user.firstName || user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.username }}
+                  </p>
+                  <p class="text-xs text-gray-400 truncate">@{{ user.username }} · {{ user.email }}</p>
+                </div>
+                <span class="text-xs text-primary-400 shrink-0">Invitar</span>
+              </button>
+            </div>
+            <p v-if="searchQuery.length >= 2 && searchResults.length === 0 && !searching" class="text-xs text-gray-500 mt-1">
+              No se encontraron usuarios
+            </p>
           </div>
 
           <!-- Pending members -->
-          <div v-for="m in pendingMembers" :key="m.userId" class="flex items-center justify-between py-2 px-3 bg-amber-500/5 border border-amber-500/20 rounded-lg mb-2">
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-amber-400">⏳</span>
-              <span class="text-sm text-gray-300">{{ m.userId.slice(-8) }}</span>
-              <span class="text-xs text-amber-400">{{ m.status }}</span>
+          <div v-for="m in pendingMembers" :key="m.userId" class="flex items-center justify-between py-2.5 px-3 bg-amber-500/5 border border-amber-500/20 rounded-lg mb-2">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <span class="text-xs text-amber-400 shrink-0">⏳</span>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-300 truncate">{{ getMemberDisplay(m.userId) }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ getMemberSubtitle(m.userId) }}</p>
+              </div>
+              <span class="text-xs text-amber-400 shrink-0">{{ m.status }}</span>
             </div>
-            <div class="flex gap-1">
+            <div class="flex gap-1 shrink-0 ml-2">
               <button v-if="m.status === 'pending'" @click="handleAcceptMember(m.userId)" class="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded hover:bg-green-600/30">Aceptar</button>
               <button @click="handleRemoveMember(m.userId)" class="text-xs bg-red-600/20 text-red-400 px-2 py-1 rounded hover:bg-red-600/30">Eliminar</button>
             </div>
           </div>
 
           <!-- Active members -->
-          <div v-for="m in activeMembers" :key="m.userId" class="flex items-center justify-between py-2 px-3 bg-gray-800/30 rounded-lg mb-1">
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-300">{{ m.userId.slice(-8) }}</span>
-              <span class="text-xs px-1.5 py-0.5 rounded-full"
+          <div v-for="m in activeMembers" :key="m.userId" class="flex items-center justify-between py-2.5 px-3 bg-gray-800/30 rounded-lg mb-1">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <div class="min-w-0">
+                <p class="text-sm text-gray-300 truncate">{{ getMemberDisplay(m.userId) }}</p>
+                <p class="text-xs text-gray-500 truncate">{{ getMemberSubtitle(m.userId) }}</p>
+              </div>
+              <span class="text-xs px-1.5 py-0.5 rounded-full shrink-0"
                 :class="m.role === 'admin' ? 'bg-primary-500/20 text-primary-300' : 'bg-gray-700 text-gray-400'">
                 {{ m.role }}
               </span>
-              <span v-if="m.userId === settingsGroup.ownerId" class="text-xs text-amber-400">👑 propietario</span>
+              <span v-if="m.userId === settingsGroup.ownerId" class="text-xs text-amber-400 shrink-0">👑</span>
             </div>
             <button
               v-if="m.userId !== settingsGroup.ownerId"
               @click="handleRemoveMember(m.userId)"
-              class="text-xs text-red-400 hover:text-red-300 font-medium"
+              class="text-xs text-red-400 hover:text-red-300 font-medium shrink-0 ml-2"
             >
               Expulsar
             </button>
@@ -215,9 +249,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useGroupStore } from '@/stores/group'
+import { useGroupStore, type UserInfo } from '@/stores/group'
 import { useAuthStore } from '@/stores/auth'
 
 const groupStore = useGroupStore()
@@ -232,7 +266,12 @@ const creating = ref(false)
 const settingsGroup = ref<any>(null)
 const editName = ref('')
 const showInvite = ref(false)
-const inviteUserId = ref('')
+
+// Search state
+const searchQuery = ref('')
+const searchResults = ref<UserInfo[]>([])
+const searching = ref(false)
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const activeMembers = computed(() =>
   settingsGroup.value?.members.filter((m: any) => m.status === 'active') || []
@@ -244,6 +283,21 @@ const pendingMembers = computed(() =>
 onMounted(() => {
   groupStore.fetchGroups()
 })
+
+function getMemberDisplay(userId: string): string {
+  const info = groupStore.getMemberInfo(userId)
+  if (!info) return userId.slice(-8)
+  if (info.firstName || info.lastName) {
+    return `${info.firstName} ${info.lastName}`.trim()
+  }
+  return info.username
+}
+
+function getMemberSubtitle(userId: string): string {
+  const info = groupStore.getMemberInfo(userId)
+  if (!info) return ''
+  return `@${info.username} · ${info.email}`
+}
 
 async function handleCreate() {
   creating.value = true
@@ -262,11 +316,50 @@ function selectGroup(group: any) {
   router.push(`/groups/${group.id}`)
 }
 
-function openSettings(group: any) {
+async function openSettings(group: any) {
   settingsGroup.value = { ...group }
   editName.value = group.name
   showInvite.value = false
-  inviteUserId.value = ''
+  searchQuery.value = ''
+  searchResults.value = []
+  // Load member details
+  const memberIds = group.members.map((m: any) => m.userId)
+  await groupStore.loadMemberDetails(memberIds)
+}
+
+function handleSearch() {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  if (searchQuery.value.length < 2) {
+    searchResults.value = []
+    return
+  }
+  searching.value = true
+  searchTimeout = setTimeout(async () => {
+    try {
+      const results = await groupStore.searchUsers(searchQuery.value)
+      // Filter out already-members
+      const memberIds = new Set(settingsGroup.value?.members.map((m: any) => m.userId) || [])
+      searchResults.value = results.filter((u) => !memberIds.has(u.id))
+    } catch {
+      searchResults.value = []
+    } finally {
+      searching.value = false
+    }
+  }, 300)
+}
+
+async function handleInviteUser(user: UserInfo) {
+  if (!settingsGroup.value) return
+  try {
+    const updated = await groupStore.inviteUser(settingsGroup.value.id, user.id)
+    settingsGroup.value = { ...updated }
+    searchQuery.value = ''
+    searchResults.value = []
+    // Add to member details cache
+    groupStore.memberDetails.set(user.id, user)
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al invitar')
+  }
 }
 
 async function handleRename() {
@@ -286,18 +379,6 @@ async function handleToggleClose() {
     settingsGroup.value = { ...updated }
   } catch (e: any) {
     alert(e.response?.data?.error || 'Error al cambiar estado')
-  }
-}
-
-async function handleInvite() {
-  if (!inviteUserId.value || !settingsGroup.value) return
-  try {
-    const updated = await groupStore.inviteUser(settingsGroup.value.id, inviteUserId.value)
-    settingsGroup.value = { ...updated }
-    inviteUserId.value = ''
-    showInvite.value = false
-  } catch (e: any) {
-    alert(e.response?.data?.error || 'Error al invitar')
   }
 }
 

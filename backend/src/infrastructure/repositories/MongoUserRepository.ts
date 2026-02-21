@@ -3,46 +3,36 @@ import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { UserModel } from '../database/models/UserModel';
 
 export class MongoUserRepository implements IUserRepository {
-  async findById(id: string): Promise<User | null> {
-    const doc = await UserModel.findById(id);
-    if (!doc) return null;
+  private toDomain(doc: any): User {
     return User.create({
       id: doc._id.toString(),
       username: doc.username,
       email: doc.email,
+      firstName: doc.firstName || '',
+      lastName: doc.lastName || '',
       passwordHash: doc.passwordHash,
       role: doc.role as UserRole,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     });
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const doc = await UserModel.findById(id);
+    if (!doc) return null;
+    return this.toDomain(doc);
   }
 
   async findByEmail(email: string): Promise<User | null> {
     const doc = await UserModel.findOne({ email: email.toLowerCase() });
     if (!doc) return null;
-    return User.create({
-      id: doc._id.toString(),
-      username: doc.username,
-      email: doc.email,
-      passwordHash: doc.passwordHash,
-      role: doc.role as UserRole,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    });
+    return this.toDomain(doc);
   }
 
   async findByUsername(username: string): Promise<User | null> {
     const doc = await UserModel.findOne({ username });
     if (!doc) return null;
-    return User.create({
-      id: doc._id.toString(),
-      username: doc.username,
-      email: doc.email,
-      passwordHash: doc.passwordHash,
-      role: doc.role as UserRole,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    });
+    return this.toDomain(doc);
   }
 
   async findByEmailOrUsername(identifier: string): Promise<User | null> {
@@ -50,62 +40,48 @@ export class MongoUserRepository implements IUserRepository {
       $or: [{ email: identifier.toLowerCase() }, { username: identifier }],
     });
     if (!doc) return null;
-    return User.create({
-      id: doc._id.toString(),
-      username: doc.username,
-      email: doc.email,
-      passwordHash: doc.passwordHash,
-      role: doc.role as UserRole,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    });
+    return this.toDomain(doc);
   }
 
   async findAll(): Promise<User[]> {
     const docs = await UserModel.find().sort({ createdAt: -1 });
-    return docs.map((doc) =>
-      User.create({
-        id: doc._id.toString(),
-        username: doc.username,
-        email: doc.email,
-        passwordHash: doc.passwordHash,
-        role: doc.role as UserRole,
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
-      })
-    );
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async findByIds(ids: string[]): Promise<User[]> {
+    const docs = await UserModel.find({ _id: { $in: ids } });
+    return docs.map((doc) => this.toDomain(doc));
+  }
+
+  async search(query: string, limit: number = 10): Promise<User[]> {
+    const regex = new RegExp(query, 'i');
+    const docs = await UserModel.find({
+      $or: [
+        { username: regex },
+        { email: regex },
+        { firstName: regex },
+        { lastName: regex },
+      ],
+    }).limit(limit);
+    return docs.map((doc) => this.toDomain(doc));
   }
 
   async create(user: User): Promise<User> {
     const doc = await UserModel.create({
       username: user.username,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       passwordHash: user.passwordHash,
       role: user.role,
     });
-    return User.create({
-      id: doc._id.toString(),
-      username: doc.username,
-      email: doc.email,
-      passwordHash: doc.passwordHash,
-      role: doc.role as UserRole,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    });
+    return this.toDomain(doc);
   }
 
   async update(id: string, data: Partial<User>): Promise<User | null> {
     const doc = await UserModel.findByIdAndUpdate(id, data, { new: true });
     if (!doc) return null;
-    return User.create({
-      id: doc._id.toString(),
-      username: doc.username,
-      email: doc.email,
-      passwordHash: doc.passwordHash,
-      role: doc.role as UserRole,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    });
+    return this.toDomain(doc);
   }
 
   async delete(id: string): Promise<boolean> {

@@ -19,10 +19,20 @@ interface Group {
   createdAt: string
 }
 
+export interface UserInfo {
+  id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  role: string
+}
+
 export const useGroupStore = defineStore('group', () => {
   const groups = ref<Group[]>([])
   const currentGroup = ref<Group | null>(null)
   const loading = ref(false)
+  const memberDetails = ref<Map<string, UserInfo>>(new Map())
 
   const ownedGroups = computed(() => {
     const authStore = useAuthStore()
@@ -101,11 +111,34 @@ export const useGroupStore = defineStore('group', () => {
     return data
   }
 
+  async function searchUsers(query: string): Promise<UserInfo[]> {
+    const { data } = await api.get('/users/search', { params: { q: query } })
+    return data
+  }
+
+  async function loadMemberDetails(userIds: string[]) {
+    const missing = userIds.filter((id) => !memberDetails.value.has(id))
+    if (missing.length === 0) return
+    try {
+      const { data } = await api.post('/users/by-ids', { ids: missing })
+      for (const user of data) {
+        memberDetails.value.set(user.id, user)
+      }
+    } catch {
+      // silently fail
+    }
+  }
+
+  function getMemberInfo(userId: string): UserInfo | undefined {
+    return memberDetails.value.get(userId)
+  }
+
   return {
     groups, currentGroup, loading,
-    ownedGroups, invitedGroups,
+    ownedGroups, invitedGroups, memberDetails,
     fetchGroups, fetchGroup, createGroup,
     renameGroup, closeGroup, deleteGroup,
     inviteUser, joinGroup, acceptMember, removeMember,
+    searchUsers, loadMemberDetails, getMemberInfo,
   }
 })

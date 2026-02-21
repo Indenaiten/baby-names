@@ -8,6 +8,8 @@ export interface UserProps {
   id?: string;
   username: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   passwordHash: string;
   role: UserRole;
   createdAt?: Date;
@@ -18,6 +20,8 @@ export class User {
   public readonly id: string;
   public readonly username: string;
   public readonly email: string;
+  public readonly firstName: string;
+  public readonly lastName: string;
   public readonly passwordHash: string;
   public readonly role: UserRole;
   public readonly createdAt: Date;
@@ -27,6 +31,8 @@ export class User {
     this.id = props.id || '';
     this.username = props.username;
     this.email = props.email;
+    this.firstName = props.firstName || '';
+    this.lastName = props.lastName || '';
     this.passwordHash = props.passwordHash;
     this.role = props.role;
     this.createdAt = props.createdAt || new Date();
@@ -62,6 +68,8 @@ export class User {
       id: this.id,
       username: this.username,
       email: this.email,
+      firstName: this.firstName,
+      lastName: this.lastName,
       role: this.role,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,

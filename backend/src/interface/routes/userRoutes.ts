@@ -34,6 +34,20 @@ router.get('/users/me', authMiddleware, async (req: AuthenticatedRequest, res: R
   }
 });
 
+// GET /api/users/search?q=...
+router.get('/users/search', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const query = (req.query.q as string || '').trim();
+    if (query.length < 2) {
+      return res.json([]);
+    }
+    const users = await userRepository.search(query, 10);
+    res.json(users.map((u) => u.toJSON()));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/users
 router.post('/users', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -42,6 +56,8 @@ router.post('/users', authMiddleware, adminMiddleware, async (req: Authenticated
       {
         username: req.body.username,
         email: req.body.email,
+        firstName: req.body.firstName || '',
+        lastName: req.body.lastName || '',
         password: req.body.password,
         role: req.body.role || UserRole.USER,
       },
@@ -61,6 +77,18 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthenticatedR
     res.json(users.map((u) => u.toJSON()));
   } catch (error: any) {
     res.status(403).json({ error: error.message });
+  }
+});
+
+// POST /api/users/by-ids
+router.post('/users/by-ids', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const ids: string[] = req.body.ids || [];
+    if (ids.length === 0) return res.json([]);
+    const users = await userRepository.findByIds(ids);
+    res.json(users.map((u) => u.toJSON()));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
