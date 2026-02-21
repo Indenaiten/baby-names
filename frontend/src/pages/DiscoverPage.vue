@@ -19,7 +19,7 @@
     <!-- Name card -->
     <div v-else class="max-w-md mx-auto">
       <div class="text-center text-sm text-gray-500 mb-4">
-        {{ currentIndex + 1 }} de {{ totalUnrated }}
+        {{ votedCount + currentIndex + 1 }} de {{ totalUnrated }}
       </div>
 
       <div
@@ -102,6 +102,7 @@ const score = ref(0)
 const comment = ref('')
 const submitting = ref(false)
 const totalUnrated = ref(0)
+const votedCount = ref(0)
 
 const currentName = computed(() => {
   if (currentIndex.value < nameStore.unratedNames.length) {
@@ -121,19 +122,15 @@ async function submitVote() {
   submitting.value = true
   try {
     await nameStore.rateName(currentName.value.id, score.value, comment.value)
-    nextName()
+    votedCount.value++
+    score.value = 0
+    comment.value = ''
   } finally {
     submitting.value = false
   }
 }
 
 function skip() {
-  currentIndex.value++
-  score.value = 0
-  comment.value = ''
-}
-
-function nextName() {
   currentIndex.value++
   score.value = 0
   comment.value = ''
