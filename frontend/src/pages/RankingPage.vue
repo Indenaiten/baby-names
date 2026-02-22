@@ -83,7 +83,7 @@
         <button
           @click="openRating(name)"
           class="btn-secondary text-sm py-2 px-4 shrink-0"
-          v-if="!hasRated(name.id)"
+          v-if="!hasRated(name.id) && !groupStore.currentGroup?.closed"
         >
           Votar
         </button>
@@ -164,7 +164,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="p-4 bg-gray-900/50 border-t border-gray-800">
+        <div v-if="!groupStore.currentGroup?.closed" class="p-4 bg-gray-900/50 border-t border-gray-800">
           <form @submit.prevent="submitComment" class="flex gap-2">
             <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
             <button type="submit" class="btn-primary px-4 shadow-lg shadow-primary-500/20">→</button>
@@ -174,6 +174,9 @@
             Respondiendo a comentario
             <button @click="replyTo = null" class="text-primary-400 font-bold hover:underline">Cancelar</button>
           </p>
+        </div>
+        <div v-else class="p-4 bg-gray-950 text-center border-t border-gray-800">
+          <p class="text-xs text-gray-500 font-medium italic">💬 El grupo está cerrado, no se pueden añadir comentarios</p>
         </div>
       </div>
     </div>

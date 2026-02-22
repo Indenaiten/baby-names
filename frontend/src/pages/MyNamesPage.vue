@@ -117,7 +117,7 @@
           />
         </div>
 
-        <div class="p-4 bg-gray-900/50 border-t border-gray-800">
+        <div v-if="!groupStore.currentGroup?.closed" class="p-4 bg-gray-900/50 border-t border-gray-800">
           <form @submit.prevent="submitComment" class="flex gap-2">
             <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
             <button type="submit" class="btn-primary px-4">→</button>
@@ -126,6 +126,9 @@
             <span class="w-1 h-1 rounded-full bg-primary-500"></span>
             Respondiendo a comentario <button @click="replyTo = null" class="text-primary-400 font-bold ml-1">Cancelar</button>
           </p>
+        </div>
+        <div v-else class="p-4 bg-gray-950 text-center border-t border-gray-800">
+          <p class="text-xs text-gray-500 font-medium italic">💬 El grupo está cerrado, no se pueden añadir comentarios</p>
         </div>
       </div>
     </div>
@@ -136,9 +139,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
+import { useGroupStore } from '@/stores/group'
 
 const route = useRoute()
 const nameStore = useNameStore()
+const groupStore = useGroupStore()
 const gid = computed(() => route.params.gid as string)
 const activeTab = ref('proposed')
 

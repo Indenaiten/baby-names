@@ -42,6 +42,8 @@ export class MongoCommentRepository implements ICommentRepository {
       text: comment.text,
       parentId: comment.parentId,
     });
+    // Populate user info after creation
+    await doc.populate('userId', 'username');
     return this.toDomain(doc);
   }
 

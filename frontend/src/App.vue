@@ -24,13 +24,13 @@
           <router-link :to="`/groups/${groupStore.currentGroup.id}`" class="nav-link" active-class="active">
             <span>🏆</span> Ranking
           </router-link>
-          <router-link :to="`/groups/${groupStore.currentGroup.id}/add`" class="nav-link" active-class="active">
+          <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/add`" class="nav-link" active-class="active">
             <span>✨</span> Proponer nombre
           </router-link>
           <router-link :to="`/groups/${groupStore.currentGroup.id}/my-names`" class="nav-link" active-class="active">
             <span>📝</span> Mis nombres
           </router-link>
-          <router-link :to="`/groups/${groupStore.currentGroup.id}/discover`" class="nav-link" active-class="active">
+          <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="nav-link" active-class="active">
             <span>🔮</span> Descubrir
           </router-link>
         </nav>
@@ -63,7 +63,7 @@
           <span class="text-lg">🏆</span>
           <span>Ranking</span>
         </router-link>
-        <router-link :to="`/groups/${groupStore.currentGroup.id}/add`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
+        <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/add`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">✨</span>
           <span>Añadir</span>
         </router-link>
@@ -71,7 +71,7 @@
           <span class="text-lg">📝</span>
           <span>Mis nombres</span>
         </router-link>
-        <router-link :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
+        <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">🔮</span>
           <span>Descubrir</span>
         </router-link>

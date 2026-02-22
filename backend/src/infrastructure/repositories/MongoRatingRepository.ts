@@ -73,6 +73,8 @@ export class MongoRatingRepository implements IRatingRepository {
       userId: rating.userId,
       score: rating.score,
     });
+    // Populate user info after creation
+    await doc.populate('userId', 'username');
     return this.toDomain(doc);
   }
 

@@ -3,8 +3,16 @@
     <h1 class="text-3xl font-display font-bold text-white mb-2">🔮 Descubrir</h1>
     <p class="text-gray-400 mb-8">Vota nombres que aún no has valorado, uno a uno</p>
 
+    <!-- Group closed -->
+    <div v-if="groupStore.currentGroup?.closed" class="text-center py-20 animate-scale-in">
+      <p class="text-7xl mb-4">🔒</p>
+      <h2 class="text-2xl font-display font-bold text-white mb-2">Grupo cerrado</h2>
+      <p class="text-gray-400 mb-6">Este grupo está cerrado y ya no se pueden realizar votaciones.</p>
+      <router-link :to="`/groups/${gid}`" class="btn-primary">Ver ranking final</router-link>
+    </div>
+
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-20">
+    <div v-else-if="loading" class="flex justify-center py-20">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
     </div>
 
@@ -84,9 +92,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
+import { useGroupStore } from '@/stores/group'
 
 const route = useRoute()
 const nameStore = useNameStore()
+const groupStore = useGroupStore()
 const gid = computed(() => route.params.gid as string)
 
 const loading = ref(true)
@@ -104,8 +114,14 @@ const currentName = computed(() => {
 })
 
 onMounted(async () => {
-  await nameStore.fetchUnratedNames(gid.value)
-  totalUnrated.value = nameStore.unratedNames.length
+  if (!groupStore.currentGroup || groupStore.currentGroup.id !== gid.value) {
+    await groupStore.fetchGroup(gid.value)
+  }
+  
+  if (!groupStore.currentGroup?.closed) {
+    await nameStore.fetchUnratedNames(gid.value)
+    totalUnrated.value = nameStore.unratedNames.length
+  }
   loading.value = false
 })
 
