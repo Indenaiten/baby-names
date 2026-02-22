@@ -70,6 +70,9 @@
             </p>
             <p class="text-xs text-gray-500">{{ name.totalRatings }} votos</p>
           </div>
+          <p v-if="name.description" class="text-xs text-gray-400 mt-1.5 line-clamp-1 italic">
+            "{{ name.description }}"
+          </p>
         </div>
 
         <!-- Score -->

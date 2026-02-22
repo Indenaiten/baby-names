@@ -52,6 +52,9 @@
               {{ currentName.totalRatings }} votos ·
               {{ currentName.averageScore > 0 ? `${currentName.averageScore.toFixed(1)} ⭐` : 'Sin votos' }}
             </p>
+            <p v-if="currentName.description" class="text-xs text-gray-400 mt-2 px-6 line-clamp-2 italic">
+              "{{ currentName.description }}"
+            </p>
           </div>
         </div>
       </div>

@@ -40,18 +40,31 @@
               <span :class="genderBadgeClass(name.gender)">{{ genderLabel(name.gender) }}</span>
             </div>
             <p class="text-sm text-gray-500 mt-1">{{ name.totalRatings }} votos · Promedio: {{ name.averageScore > 0 ? name.averageScore.toFixed(1) : '—' }}</p>
+            <p v-if="name.description" class="text-xs text-gray-400 mt-1 line-clamp-1 italic">
+              "{{ name.description }}"
+            </p>
           </div>
-          <div class="score-pill" v-if="name.averageScore > 0">
-            ⭐ {{ name.averageScore.toFixed(1) }}
+          <div class="flex items-center gap-2">
+            <div class="score-pill" v-if="name.averageScore > 0">
+              ⭐ {{ name.averageScore.toFixed(1) }}
+            </div>
+            <!-- View details button -->
+            <button
+              @click="openDetails(name.id)"
+              class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-400 hover:text-primary-400 hover:bg-primary-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+              title="Ver detalles"
+            >
+              <span class="text-lg leading-none">👁️</span>
+            </button>
+            <!-- Delete button -->
+            <button
+              @click="handleDeleteName(name)"
+              class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+              title="Eliminar nombre"
+            >
+              <span class="text-lg leading-none">🗑️</span>
+            </button>
           </div>
-          <!-- Delete button -->
-          <button
-            @click="handleDeleteName(name)"
-            class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
-            title="Eliminar nombre"
-          >
-            <span class="text-lg leading-none">🗑️</span>
-          </button>
         </div>
       </div>
     </div>
@@ -83,6 +96,9 @@
               </p>
               <p class="text-xs text-gray-500 italic">Tu voto: {{ rating.score }}</p>
             </div>
+            <p v-if="getNameFromRating(rating.nameId)?.description" class="text-xs text-gray-400 mt-1 line-clamp-1 italic">
+              "{{ getNameFromRating(rating.nameId).description }}"
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary-600/20 text-primary-300 flex items-center justify-center font-bold shadow-inner">
@@ -163,7 +179,9 @@ onMounted(async () => {
 })
 
 function getNameFromRating(nameId: string) {
-  return nameStore.names.find(n => n.id === nameId) || nameStore.myNames.find(n => n.id === nameId)
+  return nameStore.names.find(n => n.id === nameId) || 
+         nameStore.myNames.find(n => n.id === nameId) ||
+         nameStore.unratedNames.find(n => n.id === nameId)
 }
 
 async function openDetails(nameId: string) {

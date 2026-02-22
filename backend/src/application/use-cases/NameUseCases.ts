@@ -7,13 +7,14 @@ export interface ProposeNameDTO {
   gender: Gender;
   groupId: string;
   proposedBy: string;
+  description?: string;
 }
 
 export class ProposeName {
   constructor(
     private babyNameRepository: IBabyNameRepository,
     private groupRepository: IGroupRepository
-  ) {}
+  ) { }
 
   async execute(dto: ProposeNameDTO): Promise<BabyName> {
     const group = await this.groupRepository.findById(dto.groupId);
@@ -28,6 +29,7 @@ export class ProposeName {
       gender: dto.gender,
       proposedBy: dto.proposedBy,
       groupId: dto.groupId,
+      description: dto.description,
     });
 
     return this.babyNameRepository.create(babyName);
@@ -35,7 +37,7 @@ export class ProposeName {
 }
 
 export class GetNamesByGroup {
-  constructor(private babyNameRepository: IBabyNameRepository) {}
+  constructor(private babyNameRepository: IBabyNameRepository) { }
 
   async execute(groupId: string, gender?: string): Promise<BabyName[]> {
     if (gender) {
@@ -46,7 +48,7 @@ export class GetNamesByGroup {
 }
 
 export class GetNamesByUser {
-  constructor(private babyNameRepository: IBabyNameRepository) {}
+  constructor(private babyNameRepository: IBabyNameRepository) { }
 
   async execute(userId: string, groupId: string): Promise<BabyName[]> {
     return this.babyNameRepository.findByProposedBy(userId, groupId);
@@ -54,7 +56,7 @@ export class GetNamesByUser {
 }
 
 export class GetUnratedNames {
-  constructor(private babyNameRepository: IBabyNameRepository) {}
+  constructor(private babyNameRepository: IBabyNameRepository) { }
 
   async execute(userId: string, groupId: string): Promise<BabyName[]> {
     return this.babyNameRepository.findUnratedByUser(userId, groupId);
@@ -65,7 +67,7 @@ export class DeleteName {
   constructor(
     private babyNameRepository: IBabyNameRepository,
     private groupRepository: IGroupRepository
-  ) {}
+  ) { }
 
   async execute(nameId: string, userId: string, userRole?: string): Promise<void> {
     const name = await this.babyNameRepository.findById(nameId);
@@ -90,7 +92,7 @@ export class ExportNames {
   constructor(
     private babyNameRepository: IBabyNameRepository,
     private groupRepository: IGroupRepository
-  ) {}
+  ) { }
 
   async execute(groupId: string, userId: string, userRole?: string): Promise<BabyName[]> {
     const group = await this.groupRepository.findById(groupId);

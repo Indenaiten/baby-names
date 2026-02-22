@@ -7,6 +7,7 @@ export interface IBabyNameDocument extends Document {
   groupId: mongoose.Types.ObjectId;
   averageScore: number;
   totalRatings: number;
+  description?: string;
   createdAt: Date;
 }
 
@@ -18,6 +19,7 @@ const BabyNameSchema = new Schema<IBabyNameDocument>(
     groupId: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
     averageScore: { type: Number, default: 0 },
     totalRatings: { type: Number, default: 0 },
+    description: { type: String, trim: true },
   },
   { timestamps: true }
 );

@@ -24,6 +24,16 @@
         />
       </div>
 
+      <!-- Description input -->
+      <div>
+        <label class="block text-sm text-gray-400 mb-2">Descripción (opcional)</label>
+        <textarea
+          v-model="description"
+          class="input-field min-h-[100px] py-3"
+          placeholder="¿Por qué este nombre? ¿Qué significa?"
+        ></textarea>
+      </div>
+
       <!-- Gender selection -->
       <div>
         <label class="block text-sm text-gray-400 mb-3">Género</label>
@@ -65,6 +75,7 @@ const nameStore = useNameStore()
 
 const gid = computed(() => route.params.gid as string)
 const name = ref('')
+const description = ref('')
 const gender = ref('')
 const submitting = ref(false)
 const success = ref('')
@@ -81,9 +92,10 @@ async function handleSubmit() {
   error.value = ''
   success.value = ''
   try {
-    await nameStore.proposeName(gid.value, name.value, gender.value)
+    await nameStore.proposeName(gid.value, name.value, gender.value, description.value)
     success.value = name.value
     name.value = ''
+    description.value = ''
     gender.value = ''
   } catch (e: any) {
     error.value = e.response?.data?.error || 'Error al añadir el nombre'
