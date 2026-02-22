@@ -38,5 +38,11 @@ export const useUserStore = defineStore('user', () => {
     await api.post(`/users/${userId}/reset-password`, { newPassword })
   }
 
-  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword }
+  async function updateUserRole(userId: string, role: string) {
+    await api.patch(`/users/${userId}/role`, { role })
+    const user = users.value.find((u) => u.id === userId)
+    if (user) user.role = role
+  }
+
+  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword, updateUserRole }
 })

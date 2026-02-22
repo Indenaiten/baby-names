@@ -72,7 +72,16 @@
                 <span class="font-medium text-white">{{ user.username }}</span>
               </td>
               <td class="px-6 py-4">
-                <span class="text-xs font-medium px-2.5 py-1 rounded-full"
+                <select
+                  v-if="canChangeRole(user)"
+                  :value="user.role"
+                  @change="handleRoleChange(user, ($event.target as HTMLSelectElement).value)"
+                  class="bg-gray-800 border-none rounded-lg text-xs font-medium px-2 py-1 text-white focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                >
+                  <option value="user">user</option>
+                  <option value="admin">admin</option>
+                </select>
+                <span v-else class="text-xs font-medium px-2.5 py-1 rounded-full"
                   :class="user.role === 'root' ? 'bg-amber-500/20 text-amber-300' : user.role === 'admin' ? 'bg-primary-500/20 text-primary-300' : 'bg-gray-700 text-gray-300'">
                   {{ user.role }}
                 </span>
@@ -147,9 +156,28 @@ async function handleCreate() {
 }
 
 function canDelete(user: any) {
+  if (authStore.user?.id === user.id) return false
   if (authStore.isRoot) return true
   if (authStore.isAdmin && user.role === 'user') return true
   return false
+}
+
+function canChangeRole(user: any) {
+  if (user.role === 'root') return false
+  if (authStore.user?.id === user.id) return false
+  if (authStore.isRoot) return true
+  if (authStore.isAdmin && user.role === 'user') return true
+  return false
+}
+
+async function handleRoleChange(user: any, newRole: string) {
+  try {
+    await userStore.updateUserRole(user.id, newRole)
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al cambiar rol')
+    // Refresh to revert UI state if needed
+    userStore.fetchUsers()
+  }
 }
 
 async function handleDelete(user: any) {

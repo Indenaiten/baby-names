@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { LoginUser } from '../../application/use-cases/LoginUser';
 import { RegisterUser } from '../../application/use-cases/RegisterUser';
-import { GetAllUsers, DeleteUser, GetUserProfile } from '../../application/use-cases/UserUseCases';
+import { GetAllUsers, DeleteUser, GetUserProfile, UpdateUserRole } from '../../application/use-cases/UserUseCases';
 import { ChangePassword, ResetPassword } from '../../application/use-cases/PasswordUseCases';
 import { AuthenticatedRequest, authMiddleware, adminMiddleware } from '../middleware/auth';
 import { MongoUserRepository } from '../../infrastructure/repositories/MongoUserRepository';
@@ -128,6 +128,22 @@ router.post('/users/me/change-password', authMiddleware, async (req: Authenticat
       req.body.newPassword
     );
     res.json({ message: 'Password changed successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PATCH /api/users/:id/role
+router.patch('/users/:id/role', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updateUserRole = new UpdateUserRole(userRepository);
+    await updateUserRole.execute(
+      req.params.id,
+      req.body.role as UserRole,
+      req.userId!,
+      req.userRole as UserRole
+    );
+    res.json({ message: 'User role updated' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
