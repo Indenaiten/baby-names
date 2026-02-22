@@ -22,7 +22,6 @@ interface Group {
 export interface UserInfo {
   id: string
   username: string
-  email: string
   firstName: string
   lastName: string
   role: string

@@ -17,12 +17,12 @@
 
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-400 mb-1.5">Usuario o email</label>
+            <label class="block text-sm text-gray-400 mb-1.5">Usuario</label>
             <input
               v-model="identifier"
               type="text"
               class="input-field"
-              placeholder="tu@email.com o username"
+              placeholder="Tu nombre de usuario"
               required
               autofocus
             />

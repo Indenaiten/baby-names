@@ -5,7 +5,6 @@ import api from '@/services/api'
 interface User {
   id: string
   username: string
-  email: string
   role: string
   createdAt: string
 }
@@ -24,8 +23,8 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function createUser(username: string, email: string, password: string, role: string) {
-    const { data } = await api.post('/users', { username, email, password, role })
+  async function createUser(username: string, password: string, role: string) {
+    const { data } = await api.post('/users', { username, password, role })
     users.value.unshift(data)
     return data
   }

@@ -2,7 +2,7 @@ import { IUserRepository } from '../../domain/repositories/IUserRepository';
 import { AuthService } from '../../infrastructure/auth/AuthService';
 
 export interface LoginDTO {
-  identifier: string; // email or username
+  identifier: string; // username
   password: string;
 }
 
@@ -11,7 +11,6 @@ export interface LoginResult {
   user: {
     id: string;
     username: string;
-    email: string;
     role: string;
   };
 }
@@ -20,7 +19,7 @@ export class LoginUser {
   constructor(private userRepository: IUserRepository) {}
 
   async execute(dto: LoginDTO): Promise<LoginResult> {
-    const user = await this.userRepository.findByEmailOrUsername(dto.identifier);
+    const user = await this.userRepository.findByUsername(dto.identifier);
     if (!user) {
       throw new Error('Invalid credentials');
     }
@@ -40,7 +39,6 @@ export class LoginUser {
       user: {
         id: user.id,
         username: user.username,
-        email: user.email,
         role: user.role,
       },
     };

@@ -7,7 +7,6 @@ export class MongoUserRepository implements IUserRepository {
     return User.create({
       id: doc._id.toString(),
       username: doc.username,
-      email: doc.email,
       firstName: doc.firstName || '',
       lastName: doc.lastName || '',
       passwordHash: doc.passwordHash,
@@ -23,11 +22,6 @@ export class MongoUserRepository implements IUserRepository {
     return this.toDomain(doc);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    const doc = await UserModel.findOne({ email: email.toLowerCase() });
-    if (!doc) return null;
-    return this.toDomain(doc);
-  }
 
   async findByUsername(username: string): Promise<User | null> {
     const doc = await UserModel.findOne({ username });
@@ -35,13 +29,6 @@ export class MongoUserRepository implements IUserRepository {
     return this.toDomain(doc);
   }
 
-  async findByEmailOrUsername(identifier: string): Promise<User | null> {
-    const doc = await UserModel.findOne({
-      $or: [{ email: identifier.toLowerCase() }, { username: identifier }],
-    });
-    if (!doc) return null;
-    return this.toDomain(doc);
-  }
 
   async findAll(): Promise<User[]> {
     const docs = await UserModel.find().sort({ createdAt: -1 });
@@ -58,7 +45,6 @@ export class MongoUserRepository implements IUserRepository {
     const docs = await UserModel.find({
       $or: [
         { username: regex },
-        { email: regex },
         { firstName: regex },
         { lastName: regex },
       ],
@@ -69,7 +55,6 @@ export class MongoUserRepository implements IUserRepository {
   async create(user: User): Promise<User> {
     const doc = await UserModel.create({
       username: user.username,
-      email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       passwordHash: user.passwordHash,

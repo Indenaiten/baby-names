@@ -55,7 +55,6 @@ router.post('/users', authMiddleware, adminMiddleware, async (req: Authenticated
     const user = await registerUser.execute(
       {
         username: req.body.username,
-        email: req.body.email,
         firstName: req.body.firstName || '',
         lastName: req.body.lastName || '',
         password: req.body.password,

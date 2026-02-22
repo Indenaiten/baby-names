@@ -76,7 +76,7 @@
               v-model="searchQuery"
               @input="handleSearch"
               class="input-field text-sm w-full"
-              placeholder="Buscar por nombre, email o usuario..."
+              placeholder="Buscar por nombre o usuario..."
               autocomplete="off"
             />
             <!-- Search results dropdown -->
@@ -94,7 +94,7 @@
                   <p class="text-sm text-white font-medium truncate">
                     {{ user.firstName || user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.username }}
                   </p>
-                  <p class="text-xs text-gray-400 truncate">@{{ user.username }} · {{ user.email }}</p>
+                  <p class="text-xs text-gray-400 truncate">@{{ user.username }}</p>
                 </div>
                 <span class="text-xs text-primary-400 shrink-0">Invitar</span>
               </button>
@@ -344,7 +344,7 @@ function getMemberDisplay(userId: string): string {
 function getMemberSubtitle(userId: string): string {
   const info = groupStore.getMemberInfo(userId)
   if (!info) return ''
-  return `@${info.username} · ${info.email}`
+  return `@${info.username}`
 }
 
 async function handleCreate() {

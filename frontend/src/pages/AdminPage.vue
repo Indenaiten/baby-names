@@ -17,7 +17,6 @@
         </div>
         <form @submit.prevent="handleCreate" class="space-y-4">
           <input v-model="form.username" class="input-field" placeholder="Nombre de usuario" required />
-          <input v-model="form.email" class="input-field" placeholder="Email" type="email" required />
           <input v-model="form.password" class="input-field" placeholder="Contraseña" type="password" required />
           <select v-model="form.role" class="input-field">
             <option value="user">Usuario</option>
@@ -45,7 +44,6 @@
           <thead>
             <tr class="border-b border-gray-800">
               <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">Usuario</th>
-              <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">Email</th>
               <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">Rol</th>
               <th class="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">Creado</th>
               <th class="text-right text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">Acciones</th>
@@ -56,7 +54,6 @@
               <td class="px-6 py-4">
                 <span class="font-medium text-white">{{ user.username }}</span>
               </td>
-              <td class="px-6 py-4 text-gray-400 text-sm">{{ user.email }}</td>
               <td class="px-6 py-4">
                 <span class="text-xs font-medium px-2.5 py-1 rounded-full"
                   :class="user.role === 'root' ? 'bg-amber-500/20 text-amber-300' : user.role === 'admin' ? 'bg-primary-500/20 text-primary-300' : 'bg-gray-700 text-gray-300'">
@@ -96,7 +93,6 @@ const createError = ref('')
 
 const form = reactive({
   username: '',
-  email: '',
   password: '',
   role: 'user',
 })
@@ -109,10 +105,9 @@ async function handleCreate() {
   creating.value = true
   createError.value = ''
   try {
-    await userStore.createUser(form.username, form.email, form.password, form.role)
+    await userStore.createUser(form.username, form.password, form.role)
     showCreate.value = false
     form.username = ''
-    form.email = ''
     form.password = ''
     form.role = 'user'
   } catch (e: any) {
