@@ -7,6 +7,7 @@ interface GroupMember {
   userId: string
   role: string
   status: string
+  isInvolved?: boolean
   joinedAt: string
 }
 
@@ -175,6 +176,14 @@ export const useGroupStore = defineStore('group', () => {
     if (currentGroup.value?.id === groupId) currentGroup.value = null
   }
 
+  async function toggleInvolvedMember(groupId: string, userId: string) {
+    const { data } = await api.put(`/groups/${groupId}/members/${userId}/involved`)
+    currentGroup.value = data
+    const idx = groups.value.findIndex((g) => g.id === groupId)
+    if (idx !== -1) groups.value[idx] = data
+    return data
+  }
+
   async function searchUsers(query: string): Promise<UserInfo[]> {
     const { data } = await api.get('/users/search', { params: { q: query } })
     return data
@@ -202,7 +211,7 @@ export const useGroupStore = defineStore('group', () => {
     ownedGroups, invitedGroups, pendingInvitations, memberDetails,
     fetchGroups, fetchGroup, createGroup,
     renameGroup, closeGroup, updateGroupFamilyContext, deleteGroup,
-    inviteUser, joinGroup, acceptMember, removeMember,
+    inviteUser, joinGroup, acceptMember, removeMember, toggleInvolvedMember,
     respondToInvitation, leaveGroup,
     searchUsers, loadMemberDetails, getMemberInfo,
   }

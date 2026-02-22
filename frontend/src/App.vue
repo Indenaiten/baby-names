@@ -84,7 +84,7 @@
         </router-link>
         <router-link :to="`/groups/${groupStore.currentGroup.id}/my-names`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">📝</span>
-          <span>Mis nombres</span>
+          <span>Nombres</span>
         </router-link>
         <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">🔮</span>

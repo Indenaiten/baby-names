@@ -27,6 +27,12 @@ export class MongoBabyNameRepository implements IBabyNameRepository {
       averageScore: doc.averageScore,
       totalRatings: doc.totalRatings,
       description: doc.description,
+      decisions: (doc.decisions || []).map((d: any) => ({
+        userId: d.userId.toString(),
+        type: d.type as 'like' | 'dislike',
+        createdAt: d.createdAt,
+      })),
+      isWinner: doc.isWinner || false,
       createdAt: doc.createdAt,
     });
   }
@@ -73,7 +79,8 @@ export class MongoBabyNameRepository implements IBabyNameRepository {
   }
 
   async update(id: string, data: Partial<BabyName>): Promise<BabyName | null> {
-    const doc = await BabyNameModel.findByIdAndUpdate(id, data, { new: true });
+    const doc = await BabyNameModel.findByIdAndUpdate(id, data, { new: true })
+      .populate('proposedBy', 'username firstName lastName');
     if (!doc) return null;
     return this.toDomain(doc);
   }

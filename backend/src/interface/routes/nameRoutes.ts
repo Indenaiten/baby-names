@@ -6,6 +6,8 @@ import {
   GetUnratedNames,
   DeleteName,
   ExportNames,
+  CastDecision,
+  SetWinner,
 } from '../../application/use-cases/NameUseCases';
 import { RateName, GetRatingsByName, GetUserRatingsInGroup, DeleteRating } from '../../application/use-cases/RatingUseCases';
 import { AddComment, GetCommentsByName } from '../../application/use-cases/CommentUseCases';
@@ -185,6 +187,28 @@ router.post('/names/:id/comments', authMiddleware, async (req: AuthenticatedRequ
       parentId: req.body.parentId || null,
     });
     res.status(201).json(comment.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/names/:id/decision
+router.post('/names/:id/decision', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const castDecision = new CastDecision(babyNameRepository, groupRepository);
+    const name = await castDecision.execute(req.params.id, req.userId!, req.body.type, req.userRole);
+    res.json(name.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/names/:id/winner
+router.post('/names/:id/winner', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const setWinner = new SetWinner(babyNameRepository, groupRepository);
+    const name = await setWinner.execute(req.params.id, req.userId!, req.body.isWinner, req.userRole);
+    res.json(name.toJSON());
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

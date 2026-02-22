@@ -214,8 +214,11 @@
               <div class="min-w-0">
                 <p class="text-sm text-gray-300 truncate">{{ getMemberDisplay(m.userId) }}</p>
                 <p class="text-xs text-gray-500 truncate">{{ getMemberSubtitle(m.userId) }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs text-slate-500">{{ m.role }}</span>
+                  <span v-if="m.isInvolved" class="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-medium uppercase tracking-wider">Implicado</span>
+                </div>
               </div>
-              <span class="text-xs text-amber-400 shrink-0">{{ m.status }}</span>
             </div>
             <div class="flex gap-1 shrink-0 ml-2">
               <button v-if="m.status === 'pending'" @click="handleAcceptMember(m.userId)" class="text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded hover:bg-green-600/30">Aceptar</button>
@@ -229,20 +232,37 @@
               <div class="min-w-0">
                 <p class="text-sm text-gray-300 truncate">{{ getMemberDisplay(m.userId) }}</p>
                 <p class="text-xs text-gray-500 truncate">{{ getMemberSubtitle(m.userId) }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                    :class="m.role === 'admin' ? 'bg-primary-500/20 text-primary-300' : 'bg-gray-700 text-gray-400'">
+                    {{ m.role }}
+                  </span>
+                  <span v-if="m.isInvolved" class="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-medium uppercase tracking-wider">Implicado</span>
+                  <span v-if="m.userId === settingsGroup.ownerId" class="text-xs text-amber-400 shrink-0">👑</span>
+                </div>
               </div>
-              <span class="text-xs px-1.5 py-0.5 rounded-full shrink-0"
-                :class="m.role === 'admin' ? 'bg-primary-500/20 text-primary-300' : 'bg-gray-700 text-gray-400'">
-                {{ m.role }}
-              </span>
-              <span v-if="m.userId === settingsGroup.ownerId" class="text-xs text-amber-400 shrink-0">👑</span>
             </div>
-            <button
-              v-if="m.userId !== settingsGroup.ownerId"
-              @click="handleRemoveMember(m.userId)"
-              class="text-xs text-red-400 hover:text-red-300 font-medium shrink-0 ml-2"
-            >
-              Expulsar
-            </button>
+            <div class="flex items-center gap-2 shrink-0 ml-2">
+              <button 
+                v-if="isAdmin && m.userId !== authStore.user?.id"
+                @click="toggleInvolved(m.userId)"
+                class="px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-tight transition-all duration-200 flex items-center gap-1.5 border"
+                :class="m.isInvolved 
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-sm' 
+                  : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600'"
+                :title="m.isInvolved ? 'Quitar de implicados' : 'Marcar como implicado'"
+              >
+                <span class="text-xs">{{ m.isInvolved ? '✅' : '➕' }}</span>
+                <span>{{ m.isInvolved ? 'Implicado' : 'Implicar' }}</span>
+              </button>
+              <button
+                v-if="m.userId !== settingsGroup.ownerId"
+                @click="handleRemoveMember(m.userId)"
+                class="text-xs text-red-400 hover:text-red-300 font-medium"
+              >
+                Expulsar
+              </button>
+            </div>
           </div>
         </div>
 
@@ -321,12 +341,13 @@
           <div
             v-for="group in groupStore.ownedGroups"
             :key="group.id"
+            @click="selectGroup(group)"
             class="card cursor-pointer hover:border-primary-500/50 hover:shadow-primary-500/10 transition-all duration-300"
             :class="{ 'opacity-60 border-amber-500/20': group.closed }"
           >
             <!-- Header: name + settings -->
             <div class="flex items-center gap-2 mb-2">
-              <h3 @click="selectGroup(group)" class="font-semibold text-lg text-white flex-1 min-w-0 truncate">
+              <h3 class="font-semibold text-lg text-white flex-1 min-w-0 truncate">
                 {{ group.name }}
               </h3>
               <button
@@ -338,12 +359,12 @@
               </button>
             </div>
             <!-- Badges -->
-            <div @click="selectGroup(group)" class="flex flex-wrap gap-1.5 mb-3">
+            <div class="flex flex-wrap gap-1.5 mb-3">
               <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">👑 Propietario</span>
               <span v-if="group.closed" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-full">🔒 Cerrado</span>
             </div>
             <!-- Info -->
-            <div @click="selectGroup(group)">
+            <div>
               <div class="flex items-center gap-4 text-sm text-gray-400">
                 <span>👥 {{ getActiveCount(group) }} miembros</span>
                 <span>📅 {{ new Date(group.createdAt).toLocaleDateString('es') }}</span>
@@ -367,11 +388,12 @@
           <div
             v-for="group in groupStore.invitedGroups"
             :key="group.id"
+            @click="selectGroup(group)"
             class="card cursor-pointer hover:border-emerald-500/50 hover:shadow-emerald-500/10 transition-all duration-300"
             :class="{ 'opacity-60': group.closed }"
           >
             <div class="flex items-start justify-between">
-              <h3 @click="selectGroup(group)" class="font-semibold text-lg text-white cursor-pointer">
+              <h3 class="font-semibold text-lg text-white">
                 {{ group.name }}
               </h3>
               <div class="flex items-center gap-1.5">
@@ -379,7 +401,7 @@
                 <span class="text-xs bg-emerald-600/20 text-emerald-300 px-2 py-1 rounded-full">🤝 Miembro</span>
               </div>
             </div>
-            <div @click="selectGroup(group)" class="mt-3 flex items-center gap-4 text-sm text-gray-400">
+            <div class="mt-3 flex items-center gap-4 text-sm text-gray-400">
               <span>👥 {{ getActiveCount(group) }} miembros</span>
               <span>📅 {{ new Date(group.createdAt).toLocaleDateString('es') }}</span>
             </div>
@@ -446,6 +468,23 @@ const activeMembers = computed(() =>
 const pendingMembers = computed(() =>
   settingsGroup.value?.members.filter((m: any) => m.status === 'pending' || m.status === 'invited') || []
 )
+
+const isAdmin = computed(() => {
+  if (authStore.isRoot) return true
+  if (!settingsGroup.value || !authStore.user) return false
+  const member = settingsGroup.value.members.find((m: any) => m.userId === authStore.user.id)
+  return member?.role === 'admin'
+})
+
+const toggleInvolved = async (userId: string) => {
+  if (!settingsGroup.value) return
+  try {
+    const updated = await groupStore.toggleInvolvedMember(settingsGroup.value.id, userId)
+    settingsGroup.value = { ...updated }
+  } catch (error) {
+    console.error('Error toggling involved status:', error)
+  }
+}
 
 onMounted(() => {
   groupStore.fetchGroups()

@@ -240,3 +240,25 @@ export class UpdateGroupFamilyContext {
     return updated;
   }
 }
+
+export class ToggleInvolvedMember {
+  constructor(private groupRepository: IGroupRepository) { }
+
+  async execute(groupId: string, userId: string, requestingUserId: string, requestingUserRole?: string): Promise<Group> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+
+    if (requestingUserRole !== 'root' && !group.isGroupAdmin(requestingUserId)) {
+      throw new Error('Only group admins can toggle involved status');
+    }
+
+    const member = group.members.find(m => m.userId === userId);
+    if (!member) throw new Error('Member not found');
+
+    const newInvolvedStatus = !member.isInvolved;
+    const updated = await this.groupRepository.updateMember(groupId, userId, { isInvolved: newInvolvedStatus });
+    if (!updated) throw new Error('Failed to update involved status');
+
+    return updated;
+  }
+}

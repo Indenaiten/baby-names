@@ -12,6 +12,7 @@ export class MongoGroupRepository implements IGroupRepository {
         userId: m.userId.toString(),
         role: m.role as MemberRole,
         status: m.status as MemberStatus,
+        isInvolved: m.isInvolved || false,
         joinedAt: m.joinedAt,
       })),
       parents: doc.parents,
@@ -91,11 +92,12 @@ export class MongoGroupRepository implements IGroupRepository {
   async updateMember(
     groupId: string,
     userId: string,
-    data: { role?: string; status?: string }
+    data: { role?: string; status?: string; isInvolved?: boolean }
   ): Promise<Group | null> {
     const update: any = {};
     if (data.role) update['members.$.role'] = data.role;
     if (data.status) update['members.$.status'] = data.status;
+    if (data.isInvolved !== undefined) update['members.$.isInvolved'] = data.isInvolved;
 
     const doc = await GroupModel.findOneAndUpdate(
       { _id: groupId, 'members.userId': userId },

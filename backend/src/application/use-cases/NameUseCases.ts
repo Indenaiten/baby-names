@@ -77,11 +77,11 @@ export class DeleteName {
     if (!group) throw new Error('Group not found');
 
     const isRoot = userRole === 'root';
-    const isGroupAdmin = group.isGroupAdmin(userId);
-    const isProposer = name.proposedBy === userId;
+    const isOwner = group.ownerId === userId;
+    const isInvolved = group.isInvolvedMember(userId);
 
-    if (!isRoot && !isGroupAdmin && !isProposer) {
-      throw new Error('Only group admins, the proposer, or root users can delete names');
+    if (!isRoot && !isOwner && !isInvolved) {
+      throw new Error('Only owners or involved members can delete names');
     }
 
     await this.babyNameRepository.delete(nameId);
@@ -106,5 +106,75 @@ export class ExportNames {
     }
 
     return this.babyNameRepository.findByGroupId(groupId);
+  }
+}
+
+export class CastDecision {
+  constructor(
+    private babyNameRepository: IBabyNameRepository,
+    private groupRepository: IGroupRepository
+  ) { }
+
+  async execute(nameId: string, userId: string, type: 'like' | 'dislike' | null, userRole?: string): Promise<BabyName> {
+    const name = await this.babyNameRepository.findById(nameId);
+    if (!name) throw new Error('Name not found');
+
+    const group = await this.groupRepository.findById(name.groupId);
+    if (!group) throw new Error('Group not found');
+
+    if (userRole !== 'root' && !group.isMember(userId)) {
+      throw new Error('Only group members can cast decisions');
+    }
+
+    let decisions = [...name.decisions];
+    const existingIndex = decisions.findIndex((d) => String(d.userId) === String(userId));
+
+    if (type === null) {
+      if (existingIndex !== -1) decisions.splice(existingIndex, 1);
+    } else {
+      if (existingIndex !== -1) {
+        decisions[existingIndex] = { userId, type, createdAt: new Date() };
+      } else {
+        decisions.push({ userId, type, createdAt: new Date() });
+      }
+    }
+
+    const updated = await this.babyNameRepository.update(nameId, { decisions });
+    if (!updated) throw new Error('Failed to update decision');
+    return updated;
+  }
+}
+
+export class SetWinner {
+  constructor(
+    private babyNameRepository: IBabyNameRepository,
+    private groupRepository: IGroupRepository
+  ) { }
+
+  async execute(nameId: string, userId: string, isWinner: boolean, userRole?: string): Promise<BabyName> {
+    const name = await this.babyNameRepository.findById(nameId);
+    if (!name) throw new Error('Name not found');
+
+    const group = await this.groupRepository.findById(name.groupId);
+    if (!group) throw new Error('Group not found');
+
+    if (userRole !== 'root' && !group.isInvolvedMember(userId)) {
+      throw new Error('Only involved members can set the winning name');
+    }
+
+    // Unset other winners in the same group? 
+    // Usually there's only one winner. Let's unset others if this one is being set.
+    if (isWinner) {
+      const allNames = await this.babyNameRepository.findByGroupId(name.groupId);
+      for (const n of allNames) {
+        if (n.isWinner && n.id !== nameId) {
+          await this.babyNameRepository.update(n.id, { isWinner: false });
+        }
+      }
+    }
+
+    const updated = await this.babyNameRepository.update(nameId, { isWinner });
+    if (!updated) throw new Error('Failed to update winner status');
+    return updated;
   }
 }

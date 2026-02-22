@@ -13,6 +13,7 @@ import {
   RespondToInvitation,
   LeaveGroup,
   UpdateGroupFamilyContext,
+  ToggleInvolvedMember,
 } from '../../application/use-cases/GroupUseCases';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth';
 import { MongoGroupRepository } from '../../infrastructure/repositories/MongoGroupRepository';
@@ -172,6 +173,17 @@ router.put('/:id/family', authMiddleware, async (req: AuthenticatedRequest, res:
       siblings: req.body.siblings,
       preferredSurnames: req.body.preferredSurnames,
     });
+    res.json(group.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PUT /api/groups/:id/members/:userId/involved — Toggle member's involved status
+router.put('/:id/members/:userId/involved', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const toggleInvolved = new ToggleInvolvedMember(groupRepository);
+    const group = await toggleInvolved.execute(req.params.id, req.params.userId, req.userId!, req.userRole);
     res.json(group.toJSON());
   } catch (error: any) {
     res.status(400).json({ error: error.message });

@@ -30,6 +30,7 @@ const GroupMemberSchema = new Schema(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     role: { type: String, enum: ['admin', 'member'], default: 'member' },
     status: { type: String, enum: ['active', 'pending', 'invited'], default: 'active' },
+    isInvolved: { type: Boolean, default: false },
     joinedAt: { type: Date, default: Date.now },
   },
   { _id: false }

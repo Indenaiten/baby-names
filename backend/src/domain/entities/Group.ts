@@ -13,6 +13,7 @@ export interface GroupMember {
   userId: string;
   role: MemberRole;
   status: MemberStatus;
+  isInvolved?: boolean;
   joinedAt: Date;
 }
 
@@ -91,6 +92,11 @@ export class Group {
         m.role === MemberRole.ADMIN &&
         m.status === MemberStatus.ACTIVE
     );
+  }
+
+  public isInvolvedMember(userId: string): boolean {
+    const member = this.members.find((m) => m.userId === userId);
+    return !!member && member.status === MemberStatus.ACTIVE && !!member.isInvolved;
   }
 
   public hasPendingRequest(userId: string): boolean {
