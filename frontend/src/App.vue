@@ -57,6 +57,21 @@
         </div>
       </aside>
 
+      <!-- Mobile Header -->
+      <header class="lg:hidden flex items-center justify-between px-4 py-3 bg-gray-900/50 border-b border-gray-800/50 sticky top-0 z-40 backdrop-blur-md">
+        <h1 class="text-lg font-display font-bold bg-gradient-to-r from-primary-400 to-pink-400 bg-clip-text text-transparent">
+          👶 BabyNames
+        </h1>
+        <div class="flex items-center gap-2">
+          <router-link v-if="authStore.isAdmin" to="/admin" class="p-2 text-gray-400 hover:text-white transition-colors" title="Administración">
+            <span class="text-lg">⚙️</span>
+          </router-link>
+          <button @click="handleLogout" class="p-2 text-red-400 hover:text-red-300 transition-colors" title="Cerrar sesión">
+            <span class="text-lg">🚪</span>
+          </button>
+        </div>
+      </header>
+
       <!-- Mobile bottom nav -->
       <nav v-if="groupStore.currentGroup" class="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-800/50 z-50 px-2 py-1 flex justify-around">
         <router-link :to="`/groups/${groupStore.currentGroup.id}`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
@@ -69,7 +84,7 @@
         </router-link>
         <router-link :to="`/groups/${groupStore.currentGroup.id}/my-names`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">📝</span>
-          <span>Mis nombres</span>
+          <span>Nombres</span>
         </router-link>
         <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">🔮</span>

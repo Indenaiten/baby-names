@@ -1,27 +1,33 @@
-import { Group } from '../../domain/entities/Group';
+import { Group, FamilyMember } from '../../domain/entities/Group';
 import { IGroupRepository } from '../../domain/repositories/IGroupRepository';
 import { MemberRole, MemberStatus } from '../../domain/entities/Group';
 
 export interface CreateGroupDTO {
   name: string;
   ownerId: string;
+  parents?: FamilyMember[];
+  siblings?: FamilyMember[];
+  preferredSurnames?: { lastName1: string; lastName2: string };
 }
 
 export class CreateGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(dto: CreateGroupDTO): Promise<Group> {
     return this.groupRepository.create(
       Group.create({
         name: dto.name,
         ownerId: dto.ownerId,
+        parents: dto.parents,
+        siblings: dto.siblings,
+        preferredSurnames: dto.preferredSurnames,
       })
     );
   }
 }
 
 export class GetUserGroups {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(userId: string): Promise<Group[]> {
     return this.groupRepository.findByUserId(userId);
@@ -29,7 +35,7 @@ export class GetUserGroups {
 }
 
 export class GetGroupById {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -45,7 +51,7 @@ export class GetGroupById {
 }
 
 export class InviteToGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string, inviterId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -70,7 +76,7 @@ export class InviteToGroup {
 }
 
 export class RequestJoinGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -92,7 +98,7 @@ export class RequestJoinGroup {
 }
 
 export class AcceptMember {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string, adminId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -118,7 +124,7 @@ export class AcceptMember {
 }
 
 export class RemoveGroupMember {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string, adminId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -132,7 +138,7 @@ export class RemoveGroupMember {
 }
 
 export class RenameGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, newName: string, userId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -146,7 +152,7 @@ export class RenameGroup {
 }
 
 export class CloseGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, closed: boolean, userId: string): Promise<Group> {
     const group = await this.groupRepository.findById(groupId);
@@ -159,7 +165,7 @@ export class CloseGroup {
 }
 
 export class DeleteGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string): Promise<void> {
     const group = await this.groupRepository.findById(groupId);
@@ -171,7 +177,7 @@ export class DeleteGroup {
 }
 
 export class RespondToInvitation {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string, action: 'accept' | 'reject'): Promise<Group | null> {
     const group = await this.groupRepository.findById(groupId);
@@ -195,7 +201,7 @@ export class RespondToInvitation {
 }
 
 export class LeaveGroup {
-  constructor(private groupRepository: IGroupRepository) {}
+  constructor(private groupRepository: IGroupRepository) { }
 
   async execute(groupId: string, userId: string): Promise<void> {
     const group = await this.groupRepository.findById(groupId);
@@ -208,3 +214,51 @@ export class LeaveGroup {
   }
 }
 
+export interface UpdateGroupFamilyContextDTO {
+  groupId: string;
+  userId: string;
+  parents?: FamilyMember[];
+  siblings?: FamilyMember[];
+  preferredSurnames?: { lastName1: string; lastName2: string };
+}
+
+export class UpdateGroupFamilyContext {
+  constructor(private groupRepository: IGroupRepository) { }
+
+  async execute(dto: UpdateGroupFamilyContextDTO): Promise<Group> {
+    const group = await this.groupRepository.findById(dto.groupId);
+    if (!group) throw new Error('Group not found');
+    if (!group.isOwner(dto.userId)) throw new Error('Only the group owner can update family context');
+
+    const updated = await this.groupRepository.update(dto.groupId, {
+      parents: dto.parents,
+      siblings: dto.siblings,
+      preferredSurnames: dto.preferredSurnames,
+    } as any);
+
+    if (!updated) throw new Error('Failed to update group family context');
+    return updated;
+  }
+}
+
+export class ToggleInvolvedMember {
+  constructor(private groupRepository: IGroupRepository) { }
+
+  async execute(groupId: string, userId: string, requestingUserId: string, requestingUserRole?: string): Promise<Group> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+
+    if (requestingUserRole !== 'root' && !group.isGroupAdmin(requestingUserId)) {
+      throw new Error('Only group admins can toggle involved status');
+    }
+
+    const member = group.members.find(m => m.userId === userId);
+    if (!member) throw new Error('Member not found');
+
+    const newInvolvedStatus = !member.isInvolved;
+    const updated = await this.groupRepository.updateMember(groupId, userId, { isInvolved: newInvolvedStatus });
+    if (!updated) throw new Error('Failed to update involved status');
+
+    return updated;
+  }
+}

@@ -45,91 +45,141 @@
     <!-- Names list -->
     <div v-else class="space-y-3">
       <div
-        v-for="(name, index) in nameStore.names"
+        v-for="(name, index) in sortedNames"
         :key="name.id"
-        class="card flex items-center gap-4 animate-slide-up hover:border-gray-700 transition-all duration-200"
+        class="card flex flex-col sm:flex-row sm:items-center gap-4 animate-slide-up hover:border-gray-700 transition-all duration-200 p-4"
         :style="{ animationDelay: `${index * 50}ms` }"
       >
-        <!-- Rank -->
-        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
-          :class="index === 0 ? 'bg-amber-500/20 text-amber-300' : index === 1 ? 'bg-gray-400/20 text-gray-300' : index === 2 ? 'bg-orange-600/20 text-orange-400' : 'bg-gray-800 text-gray-500'">
-          {{ index + 1 }}
-        </div>
-
-        <!-- Name info -->
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="font-semibold text-lg text-white">{{ name.name }}</h3>
-            <span :class="genderBadgeClass(name.gender)">
-              {{ genderLabel(name.gender) }}
-            </span>
+        <!-- Top Half: Rank and Name Info -->
+        <div class="flex items-center gap-4 flex-1 min-w-0">
+          <!-- Rank -->
+          <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-inner"
+            :class="index === 0 ? 'bg-amber-500/20 text-amber-300' : index === 1 ? 'bg-gray-400/20 text-gray-300' : index === 2 ? 'bg-orange-600/20 text-orange-400' : 'bg-gray-800 text-gray-500'">
+            {{ index + 1 }}
           </div>
-          <div class="flex items-center gap-2 mt-0.5">
-            <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-gray-800 px-1.5 py-0.5 rounded">
-              👤 {{ name.proposerName || '...' }}
+
+          <!-- Name info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="font-bold text-lg text-white leading-tight">
+                {{ name.name }}
+                <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
+              </h3>
+              <span :class="genderBadgeClass(name.gender)">{{ genderLabel(name.gender) }}</span>
+              <span v-if="name.isWinner" class="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400/20 border border-yellow-400/30 text-xs shadow-lg shadow-yellow-400/10" title="Ganador">🏆</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+              <p class="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">Propuesto por <span class="text-gray-300">{{ name.proposerName || '...' }}</span></p>
+              <p v-if="isMatch(name)" class="text-[9px] bg-indigo-900/40 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1">
+                <span>Match!</span>
+                <span>🏆</span>
+              </p>
+              <p class="text-[11px] font-medium text-gray-500">{{ name.totalRatings }} votos</p>
+            </div>
+            <p v-if="name.description" class="text-xs text-gray-400 mt-2 line-clamp-1 italic border-l-2 border-gray-700 pl-2">
+              "{{ name.description }}"
             </p>
-            <p class="text-xs text-gray-500">{{ name.totalRatings }} votos</p>
           </div>
         </div>
 
-        <!-- Score -->
-        <div class="text-right shrink-0">
-          <div class="score-pill">
-            ⭐ {{ name.averageScore > 0 ? name.averageScore.toFixed(1) : '—' }}
+        <!-- Bottom Half (Mobile) / Right Side (Desktop): Score and Actions -->
+        <div class="flex flex-wrap items-center justify-between sm:justify-end gap-x-4 gap-y-3 border-t sm:border-t-0 border-gray-800 pt-3 sm:pt-0 w-full sm:w-auto">
+          <!-- Main Metrics: Score and Quick Decisions -->
+          <div class="flex items-center gap-4">
+            <div class="score-pill shrink-0 shadow-lg shadow-amber-500/5">
+               ⭐ {{ name.averageScore > 0 ? name.averageScore.toFixed(1) : '—' }}
+            </div>
+
+            <!-- Quick Decisions (Everyone can Like/Dislike) -->
+            <div class="flex items-center gap-1.5 border-l border-gray-700/50 pl-4">
+              <button 
+                @click.stop="toggleQuickDecision(name, 'like')"
+                class="w-9 h-9 rounded-xl transition-all duration-200 flex items-center justify-center text-base border shadow-sm"
+                :class="getMyDecision(name) === 'like' ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-green-400 hover:border-green-500/30'"
+                title="Me gusta"
+              >
+                👍
+              </button>
+              <button 
+                @click.stop="toggleQuickDecision(name, 'dislike')"
+                class="w-9 h-9 rounded-xl transition-all duration-200 flex items-center justify-center text-base border shadow-sm"
+                :class="getMyDecision(name) === 'dislike' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-red-400 hover:border-red-500/30'"
+                title="No me gusta"
+              >
+                👎
+              </button>
+              <button 
+                v-if="isInvolvedUser"
+                @click.stop="toggleQuickWinner(name)"
+                class="w-9 h-9 rounded-xl transition-all duration-200 flex items-center justify-center text-base border shadow-sm"
+                :class="name.isWinner ? 'bg-yellow-500/20 border-yellow-500 text-yellow-400' : 'bg-gray-800 border-gray-700 text-gray-500 hover:text-yellow-400 hover:border-yellow-500/30'"
+                title="Marcar como Ganador"
+              >
+                🏆
+              </button>
+            </div>
+          </div>
+
+          <!-- Secondary Group: Rating Management and List Actions -->
+          <div class="flex items-center gap-3 ml-auto sm:ml-0">
+            <!-- Rating Management (Votar/Cambiar/Borrar) -->
+            <div class="flex items-center bg-gray-800/50 rounded-xl p-1 border border-gray-700/30 sm:border-0 sm:bg-transparent sm:p-0">
+              <div v-if="hasRated(name.id)" class="flex items-center gap-1">
+                <button
+                  @click="openRating(name)"
+                  class="px-2.5 py-1.5 rounded-lg bg-primary-500/10 border border-primary-500/20 text-[10px] font-bold text-primary-400 hover:bg-primary-500/20 transition-all uppercase tracking-tight"
+                  v-if="!groupStore.currentGroup?.closed"
+                >
+                  Cambiar
+                </button>
+                <button
+                  @click="handleDeleteRating(name.id)"
+                  class="px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 hover:bg-red-500/20 transition-all uppercase tracking-tight"
+                  v-if="!groupStore.currentGroup?.closed"
+                >
+                  Borrar
+                </button>
+                <span v-else class="px-2 py-1 text-[10px] font-bold text-green-400 uppercase tracking-widest bg-green-500/5 rounded-lg border border-green-500/20">Votado</span>
+              </div>
+              <button
+                @click="openRating(name)"
+                class="px-3 py-1.5 rounded-lg bg-primary-600/20 border border-primary-500/30 text-[10px] font-bold text-primary-300 hover:bg-primary-600/40 transition-all uppercase tracking-wide"
+                v-else-if="!groupStore.currentGroup?.closed"
+              >
+                Votar
+              </button>
+            </div>
+
+            <!-- List Actions: Delete & View -->
+            <div class="flex items-center gap-1.5 border-l border-gray-700/50 pl-3">
+              <!-- Delete button -->
+              <button
+                v-if="canDelete(name)"
+                @click="handleDeleteName(name)"
+                class="w-9 h-9 rounded-xl bg-gray-800/80 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/50 shrink-0"
+                title="Eliminar nombre"
+              >
+                <span class="text-base leading-none">🗑️</span>
+              </button>
+
+              <!-- Detail toggle -->
+              <button 
+                @click="toggleComments(name.id)" 
+                class="w-9 h-9 rounded-xl bg-gray-800/80 text-gray-400 hover:text-primary-400 hover:bg-primary-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/50 shrink-0 shadow-sm"
+                title="Ver detalles"
+              >
+                <span class="text-base leading-none">👁️</span>
+              </button>
+            </div>
           </div>
         </div>
-
-        <div v-if="hasRated(name.id)" class="flex items-center gap-1 shrink-0">
-          <button
-            @click="openRating(name)"
-            class="text-xs text-primary-400 hover:text-primary-300 font-medium underline"
-            v-if="!groupStore.currentGroup?.closed"
-          >
-            Cambiar
-          </button>
-          <span class="text-xs text-gray-600">·</span>
-          <button
-            @click="handleDeleteRating(name.id)"
-            class="text-xs text-red-500 hover:text-red-400 font-medium underline"
-            v-if="!groupStore.currentGroup?.closed"
-          >
-            Borrar
-          </button>
-          <span v-else class="text-xs text-green-400">✓ Votado</span>
-        </div>
-        <button
-          @click="openRating(name)"
-          class="btn-secondary text-sm py-2 px-4 shrink-0"
-          v-else-if="!groupStore.currentGroup?.closed"
-        >
-          Votar
-        </button>
-
-        <!-- Delete button (for proposer, group owner or root) -->
-        <button
-          v-if="canDelete(name)"
-          @click="handleDeleteName(name)"
-          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
-          title="Eliminar nombre"
-        >
-          <span class="text-lg leading-none">🗑️</span>
-        </button>
-
-        <!-- Detail toggle -->
-        <button 
-          @click="toggleComments(name.id)" 
-          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-400 hover:text-primary-400 hover:bg-primary-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
-          title="Ver detalles y comentarios"
-        >
-          <span class="text-lg leading-none">👁️</span>
-        </button>
       </div>
     </div>
 
     <!-- Rating modal -->
     <div v-if="ratingModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="ratingModal = null">
       <div class="card w-full max-w-md animate-scale-in">
-        <h2 class="text-xl font-semibold mb-1">Valorar "{{ ratingModal.name }}"</h2>
+        <h2 class="text-xl font-semibold mb-1">Valorar "{{ ratingModal.name }} {{ getGroupSurnames }}"</h2>
         <p class="text-gray-400 text-sm mb-6">Puntuación del 1 al 10</p>
 
         <div class="flex justify-center gap-2 mb-6 flex-wrap">
@@ -163,36 +213,18 @@
         <div class="flex items-center justify-between p-4 border-b border-gray-800">
           <h3 class="font-bold text-xl text-white">
             {{ nameStore.names.find(n => n.id === showCommentsFor)?.name }}
+            <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
           </h3>
           <button @click="showCommentsFor = null" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
 
         <!-- Body -->
         <div class="flex-1 overflow-y-auto p-4 modal-scroll-area custom-scrollbar">
-          <NameDetails 
-            :name="nameStore.names.find(n => n.id === showCommentsFor)" 
+          <NameDetails
+            :name="nameStore.names.find(n => n.id === showCommentsFor)"
             :ratings="nameStore.ratings"
-            :comments="nameStore.comments"
             :loadingRatings="loadingRatings"
-            :loadingComments="loadingComments"
-            @reply="handleReply"
           />
-        </div>
-
-        <!-- Footer -->
-        <div v-if="!groupStore.currentGroup?.closed" class="p-4 bg-gray-900/50 border-t border-gray-800">
-          <form @submit.prevent="submitComment" class="flex gap-2">
-            <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
-            <button type="submit" class="btn-primary px-4 shadow-lg shadow-primary-500/20">→</button>
-          </form>
-          <p v-if="replyTo" class="text-[10px] text-gray-500 mt-2 flex items-center gap-2">
-            <span class="w-1 h-1 rounded-full bg-primary-500"></span>
-            Respondiendo a comentario
-            <button @click="replyTo = null" class="text-primary-400 font-bold hover:underline">Cancelar</button>
-          </p>
-        </div>
-        <div v-else class="p-4 bg-gray-950 text-center border-t border-gray-800">
-          <p class="text-xs text-gray-500 font-medium italic">💬 El grupo está cerrado, no se pueden añadir comentarios</p>
         </div>
       </div>
     </div>
@@ -205,6 +237,7 @@ import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
 import { useGroupStore } from '@/stores/group'
 import { useAuthStore } from '@/stores/auth'
+import type { BabyName } from '@/types/name' // Assuming BabyName type exists
 
 const route = useRoute()
 const nameStore = useNameStore()
@@ -212,6 +245,12 @@ const groupStore = useGroupStore()
 const authStore = useAuthStore()
 
 const gid = computed(() => route.params.gid as string)
+
+const getGroupSurnames = computed(() => {
+  const surnames = groupStore.currentGroup?.preferredSurnames
+  if (!surnames || (!surnames.lastName1 && !surnames.lastName2)) return ''
+  return `${surnames.lastName1} ${surnames.lastName2}`.trim()
+})
 
 const tabs = [
   { value: '', label: 'Todos', icon: '🌟' },
@@ -226,16 +265,68 @@ const ratingScore = ref(0)
 const submitting = ref(false)
 
 const showCommentsFor = ref<string | null>(null)
-const commentText = ref('')
-const replyTo = ref<string | null>(null)
 
 // Track rated names locally
 const ratedNameIds = ref<Set<string>>(new Set())
 
-const rootComments = computed(() => nameStore.comments.filter((c) => !c.parentId))
+const filteredNames = computed(() => {
+  let result = nameStore.names
+  if (selectedGender.value !== '') { // Changed from genderFilter to selectedGender
+    result = result.filter(n => n.gender === selectedGender.value)
+  }
+  return result
+})
 
-function getReplies(parentId: string) {
-  return nameStore.comments.filter((c) => c.parentId === parentId)
+const sortedNames = computed(() => {
+  return [...filteredNames.value].sort((a, b) => {
+    // 1. Winner first
+    if (a.isWinner && !b.isWinner) return -1
+    if (!a.isWinner && b.isWinner) return 1
+
+    // 2. Matches second
+    const aMatch = isMatch(a)
+    const bMatch = isMatch(b)
+    if (aMatch && !bMatch) return -1
+    if (bMatch && !aMatch) return 1
+
+    // 3. Then by average score
+    return b.averageScore - a.averageScore
+  })
+})
+
+const isMatch = (name: BabyName) => {
+  const involvedIds = groupStore.currentGroup?.members
+    .filter(m => m.isInvolved)
+    .map(m => m.userId) || []
+  
+  if (involvedIds.length === 0) return false
+
+  const likeIds = name.decisions
+    .filter(d => d.type === 'like')
+    .map(d => d.userId)
+  
+  return involvedIds.every(id => likeIds.includes(id))
+}
+
+const isInvolvedUser = computed(() => {
+  if (authStore.isRoot) return true
+  const member = groupStore.currentGroup?.members.find(m => m.userId === authStore.user?.id)
+  return !!member && !!member.isInvolved
+})
+
+const toggleQuickWinner = async (name: BabyName) => {
+  await nameStore.setWinner(name.id, !name.isWinner)
+}
+
+const toggleQuickDecision = async (name: BabyName, type: 'like' | 'dislike') => {
+  const current = name.decisions.find(d => String(d.userId) === String(authStore.user?.id))
+  const newType = current?.type === type ? null : type
+  await nameStore.castDecision(name.id, newType)
+}
+
+const getMyDecision = (name: BabyName) => {
+  const d = name.decisions?.find(d => String(d.userId) === String(authStore.user?.id))
+  return d?.type || null
 }
 
 function hasRated(nameId: string) {
@@ -245,8 +336,9 @@ function hasRated(nameId: string) {
 function canDelete(name: any) {
   if (!authStore.user) return false
   if (authStore.isRoot) return true
-  if (name.proposedBy === authStore.user.id) return true
-  return groupStore.currentGroup?.ownerId === authStore.user.id
+  // Only owner or involved users can delete
+  const isOwner = groupStore.currentGroup?.ownerId === authStore.user.id
+  return isOwner || isInvolvedUser.value
 }
 
 const canExport = computed(() => {
@@ -308,41 +400,19 @@ async function handleDeleteRating(nameId: string) {
   }
 }
 
-// Comment toggle
+// Details toggle
 const loadingRatings = ref(false)
-const loadingComments = ref(false)
 
 async function toggleComments(nameId: string) {
   showCommentsFor.value = nameId
-  replyTo.value = null
-  commentText.value = ''
-  
+
   loadingRatings.value = true
-  loadingComments.value = true
-  
+
   try {
-    await Promise.all([
-      nameStore.fetchRatings(nameId),
-      nameStore.fetchComments(nameId)
-    ])
+    await nameStore.fetchRatings(nameId)
   } finally {
     loadingRatings.value = false
-    loadingComments.value = false
   }
-}
-
-function handleReply(comment: any) {
-  replyTo.value = comment.id
-  // Scroll to bottom of modal to focus input
-  const modalBody = document.querySelector('.modal-scroll-area')
-  if (modalBody) modalBody.scrollTop = modalBody.scrollHeight
-}
-
-async function submitComment() {
-  if (!commentText.value.trim() || !showCommentsFor.value) return
-  await nameStore.addComment(showCommentsFor.value, commentText.value, replyTo.value || undefined)
-  commentText.value = ''
-  replyTo.value = null
 }
 
 async function handleDeleteName(name: any) {

@@ -12,6 +12,8 @@ import {
   DeleteGroup,
   RespondToInvitation,
   LeaveGroup,
+  UpdateGroupFamilyContext,
+  ToggleInvolvedMember,
 } from '../../application/use-cases/GroupUseCases';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth';
 import { MongoGroupRepository } from '../../infrastructure/repositories/MongoGroupRepository';
@@ -26,6 +28,9 @@ router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response
     const group = await createGroup.execute({
       name: req.body.name,
       ownerId: req.userId!,
+      parents: req.body.parents,
+      siblings: req.body.siblings,
+      preferredSurnames: req.body.preferredSurnames,
     });
     res.status(201).json(group.toJSON());
   } catch (error: any) {
@@ -152,6 +157,34 @@ router.post('/:id/leave', authMiddleware, async (req: AuthenticatedRequest, res:
     const leave = new LeaveGroup(groupRepository);
     await leave.execute(req.params.id, req.userId!);
     res.json({ message: 'Left group successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PUT /api/groups/:id/family
+router.put('/:id/family', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updateFamily = new UpdateGroupFamilyContext(groupRepository);
+    const group = await updateFamily.execute({
+      groupId: req.params.id,
+      userId: req.userId!,
+      parents: req.body.parents,
+      siblings: req.body.siblings,
+      preferredSurnames: req.body.preferredSurnames,
+    });
+    res.json(group.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PUT /api/groups/:id/members/:userId/involved — Toggle member's involved status
+router.put('/:id/members/:userId/involved', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const toggleInvolved = new ToggleInvolvedMember(groupRepository);
+    const group = await toggleInvolved.execute(req.params.id, req.params.userId, req.userId!, req.userRole);
+    res.json(group.toJSON());
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

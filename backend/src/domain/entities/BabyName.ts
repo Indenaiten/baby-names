@@ -13,7 +13,16 @@ export interface BabyNameProps {
   groupId: string;
   averageScore?: number;
   totalRatings?: number;
+  description?: string;
+  decisions?: BabyNameDecision[];
+  isWinner?: boolean;
   createdAt?: Date;
+}
+
+export interface BabyNameDecision {
+  userId: string;
+  type: 'like' | 'dislike';
+  createdAt: Date;
 }
 
 export class BabyName {
@@ -25,6 +34,9 @@ export class BabyName {
   public readonly groupId: string;
   public averageScore: number;
   public totalRatings: number;
+  public readonly description?: string;
+  public decisions: BabyNameDecision[];
+  public isWinner: boolean;
   public readonly createdAt: Date;
 
   private constructor(props: BabyNameProps) {
@@ -36,6 +48,9 @@ export class BabyName {
     this.groupId = props.groupId;
     this.averageScore = props.averageScore || 0;
     this.totalRatings = props.totalRatings || 0;
+    this.description = props.description;
+    this.decisions = props.decisions || [];
+    this.isWinner = props.isWinner || false;
     this.createdAt = props.createdAt || new Date();
   }
 
@@ -70,6 +85,9 @@ export class BabyName {
       groupId: this.groupId,
       averageScore: this.averageScore,
       totalRatings: this.totalRatings,
+      description: this.description,
+      decisions: this.decisions,
+      isWinner: this.isWinner,
       createdAt: this.createdAt,
     };
   }

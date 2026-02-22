@@ -11,6 +11,15 @@ interface BabyName {
   groupId: string
   averageScore: number
   totalRatings: number
+  description?: string
+  decisions: BabyNameDecision[]
+  isWinner: boolean
+  createdAt: string
+}
+
+export interface BabyNameDecision {
+  userId: string
+  type: 'like' | 'dislike'
   createdAt: string
 }
 
@@ -64,8 +73,8 @@ export const useNameStore = defineStore('name', () => {
     unratedNames.value = data
   }
 
-  async function proposeName(groupId: string, name: string, gender: string) {
-    const { data } = await api.post(`/groups/${groupId}/names`, { name, gender })
+  async function proposeName(groupId: string, name: string, gender: string, description?: string) {
+    const { data } = await api.post(`/groups/${groupId}/names`, { name, gender, description })
     names.value.unshift(data)
     myNames.value.unshift(data)
     return data
@@ -80,7 +89,7 @@ export const useNameStore = defineStore('name', () => {
   async function rateName(nameId: string, score: number) {
     const { data } = await api.post(`/names/${nameId}/rate`, { score })
     unratedNames.value = unratedNames.value.filter((n) => n.id !== nameId)
-    
+
     // Update the name's average in local state
     const name = names.value.find((n) => n.id === nameId)
     if (name) {
@@ -104,10 +113,10 @@ export const useNameStore = defineStore('name', () => {
 
   async function deleteRating(nameId: string) {
     await api.delete(`/names/${nameId}/rate`)
-    
+
     const name = names.value.find((n) => n.id === nameId)
     const ratingIndex = myRatings.value.findIndex(r => r.nameId === nameId)
-    
+
     if (name && ratingIndex !== -1) {
       const score = myRatings.value[ratingIndex].score
       const total = name.totalRatings
@@ -147,9 +156,41 @@ export const useNameStore = defineStore('name', () => {
     return data
   }
 
+  async function castDecision(nameId: string, type: 'like' | 'dislike' | null) {
+    const { data } = await api.post(`/names/${nameId}/decision`, { type })
+    const updateLocal = (list: BabyName[]) => {
+      const idx = list.findIndex((n) => n.id === nameId)
+      if (idx !== -1) list.splice(idx, 1, data)
+    }
+    updateLocal(names.value)
+    updateLocal(myNames.value)
+    updateLocal(unratedNames.value)
+    return data
+  }
+
+  async function setWinner(nameId: string, isWinner: boolean) {
+    const { data } = await api.post(`/names/${nameId}/winner`, { isWinner })
+    // Update local state for all relevant lists
+    const updateLocal = (list: BabyName[]) => {
+      list.forEach(n => {
+        if (isWinner) {
+          if (n.id === nameId) n.isWinner = true
+          else if (n.isWinner) n.isWinner = false
+        } else {
+          if (n.id === nameId) n.isWinner = false
+        }
+      })
+    }
+    updateLocal(names.value)
+    updateLocal(myNames.value)
+    updateLocal(unratedNames.value)
+    return data
+  }
+
   return {
     names, myNames, unratedNames, ratings, myRatings, comments, loading,
     fetchNames, fetchMyNames, fetchUnratedNames, proposeName, deleteName,
     rateName, deleteRating, fetchRatings, fetchMyRatings, fetchComments, addComment, exportNames,
+    castDecision, setWinner,
   }
 })

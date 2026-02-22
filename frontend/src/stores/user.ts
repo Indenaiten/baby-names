@@ -5,6 +5,8 @@ import api from '@/services/api'
 interface User {
   id: string
   username: string
+  firstName: string
+  lastName: string
   role: string
   createdAt: string
 }
@@ -23,8 +25,8 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function createUser(username: string, password: string, role: string) {
-    const { data } = await api.post('/users', { username, password, role })
+  async function createUser(username: string, firstName: string, lastName: string, password: string, role: string) {
+    const { data } = await api.post('/users', { username, firstName, lastName, password, role })
     users.value.unshift(data)
     return data
   }
@@ -44,5 +46,12 @@ export const useUserStore = defineStore('user', () => {
     if (user) user.role = role
   }
 
-  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword, updateUserRole }
+  async function updateUser(userId: string, data: Partial<User>) {
+    const { data: updatedUser } = await api.put(`/users/${userId}`, data)
+    const idx = users.value.findIndex((u) => u.id === userId)
+    if (idx !== -1) users.value[idx] = updatedUser
+    return updatedUser
+  }
+
+  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword, updateUserRole, updateUser }
 })
