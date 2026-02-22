@@ -98,12 +98,12 @@ export class UpdateUser {
     }
 
     if (data.username) {
-      const trimmedUsername = data.username.trim();
-      const existing = await this.userRepository.findByUsername(trimmedUsername);
+      const normalizedUsername = data.username.trim().toLowerCase();
+      const existing = await this.userRepository.findByUsername(normalizedUsername);
       if (existing && existing.id.toString() !== userId.toString()) {
         throw new Error('Username already in use');
       }
-      data.username = trimmedUsername;
+      data.username = normalizedUsername;
     }
 
     // Relax first name validation: only throw if it's explicitly being cleared and it's a new requirement

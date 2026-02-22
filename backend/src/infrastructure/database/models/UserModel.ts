@@ -13,7 +13,7 @@ export interface IUserDocument extends Document {
 
 const UserSchema = new Schema<IUserDocument>(
   {
-    username: { type: String, required: true, unique: true, trim: true },
+    username: { type: String, required: true, unique: true, trim: true, lowercase: true },
     firstName: { type: String, default: '', trim: true },
     lastName: { type: String, default: '', trim: true },
     passwordHash: { type: String, required: true },

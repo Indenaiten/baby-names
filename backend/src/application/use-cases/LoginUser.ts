@@ -20,7 +20,8 @@ export class LoginUser {
   constructor(private userRepository: IUserRepository) {}
 
   async execute(dto: LoginDTO): Promise<LoginResult> {
-    const user = await this.userRepository.findByUsername(dto.identifier);
+    const normalizedIdentifier = dto.identifier.trim().toLowerCase();
+    const user = await this.userRepository.findByUsername(normalizedIdentifier);
     if (!user) {
       throw new Error('Invalid credentials');
     }
