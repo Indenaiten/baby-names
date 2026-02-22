@@ -19,15 +19,18 @@ export class RateName {
     if (!name) throw new Error('Name not found');
 
     const existingRating = await this.ratingRepository.findByUserAndName(dto.userId, dto.nameId);
-    if (existingRating) throw new Error('You have already rated this name');
-
-    const rating = Rating.create({
-      nameId: dto.nameId,
-      userId: dto.userId,
-      score: dto.score,
-    });
-
-    const created = await this.ratingRepository.create(rating);
+    
+    let rating: Rating;
+    if (existingRating) {
+      rating = await this.ratingRepository.update(existingRating.id, { score: dto.score });
+    } else {
+      const newRating = Rating.create({
+        nameId: dto.nameId,
+        userId: dto.userId,
+        score: dto.score,
+      });
+      rating = await this.ratingRepository.create(newRating);
+    }
 
     // Update average score on the name
     const { average, count } = await this.ratingRepository.getAverageScore(dto.nameId);
@@ -36,7 +39,28 @@ export class RateName {
       totalRatings: count,
     } as any);
 
-    return created;
+    return rating;
+  }
+}
+
+export class DeleteRating {
+  constructor(
+    private ratingRepository: IRatingRepository,
+    private babyNameRepository: IBabyNameRepository
+  ) {}
+
+  async execute(userId: string, nameId: string): Promise<void> {
+    const existingRating = await this.ratingRepository.findByUserAndName(userId, nameId);
+    if (!existingRating) throw new Error('Rating not found');
+
+    await this.ratingRepository.delete(existingRating.id);
+
+    // Update average score on the name
+    const { average, count } = await this.ratingRepository.getAverageScore(nameId);
+    await this.babyNameRepository.update(nameId, {
+      averageScore: average,
+      totalRatings: count,
+    } as any);
   }
 }
 

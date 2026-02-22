@@ -7,5 +7,7 @@ export interface IRatingRepository {
   findByUserAndName(userId: string, nameId: string): Promise<Rating | null>;
   findByUserInGroup(userId: string, groupId: string): Promise<Rating[]>;
   create(rating: Rating): Promise<Rating>;
+  update(id: string, rating: Partial<Rating>): Promise<Rating>;
+  delete(id: string): Promise<void>;
   getAverageScore(nameId: string): Promise<{ average: number; count: number }>;
 }

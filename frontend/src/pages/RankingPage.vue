@@ -79,15 +79,31 @@
           </div>
         </div>
 
-        <!-- Rate button -->
+        <div v-if="hasRated(name.id)" class="flex items-center gap-1 shrink-0">
+          <button
+            @click="openRating(name)"
+            class="text-xs text-primary-400 hover:text-primary-300 font-medium underline"
+            v-if="!groupStore.currentGroup?.closed"
+          >
+            Cambiar
+          </button>
+          <span class="text-xs text-gray-600">·</span>
+          <button
+            @click="handleDeleteRating(name.id)"
+            class="text-xs text-red-500 hover:text-red-400 font-medium underline"
+            v-if="!groupStore.currentGroup?.closed"
+          >
+            Borrar
+          </button>
+          <span v-else class="text-xs text-green-400">✓ Votado</span>
+        </div>
         <button
           @click="openRating(name)"
           class="btn-secondary text-sm py-2 px-4 shrink-0"
-          v-if="!hasRated(name.id) && !groupStore.currentGroup?.closed"
+          v-else-if="!groupStore.currentGroup?.closed"
         >
           Votar
         </button>
-        <span v-else class="text-xs text-green-400 shrink-0">✓ Votado</span>
 
         <!-- Delete button (for proposer, group owner or root) -->
         <button
@@ -264,7 +280,8 @@ function genderLabel(gender: string) {
 
 function openRating(name: any) {
   ratingModal.value = name
-  ratingScore.value = 0
+  const existingRating = nameStore.myRatings.find(r => r.nameId === name.id)
+  ratingScore.value = existingRating ? existingRating.score : 0
 }
 
 async function submitRating() {
@@ -274,8 +291,20 @@ async function submitRating() {
     await nameStore.rateName(ratingModal.value.id, ratingScore.value)
     ratedNameIds.value.add(ratingModal.value.id)
     ratingModal.value = null
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al enviar el voto')
   } finally {
     submitting.value = false
+  }
+}
+
+async function handleDeleteRating(nameId: string) {
+  if (!confirm('¿Estás seguro de que quieres eliminar tu voto?')) return
+  try {
+    await nameStore.deleteRating(nameId)
+    ratedNameIds.value.delete(nameId)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al eliminar el voto')
   }
 }
 

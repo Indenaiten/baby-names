@@ -7,7 +7,7 @@ import {
   DeleteName,
   ExportNames,
 } from '../../application/use-cases/NameUseCases';
-import { RateName, GetRatingsByName, GetUserRatingsInGroup } from '../../application/use-cases/RatingUseCases';
+import { RateName, GetRatingsByName, GetUserRatingsInGroup, DeleteRating } from '../../application/use-cases/RatingUseCases';
 import { AddComment, GetCommentsByName } from '../../application/use-cases/CommentUseCases';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth';
 import { MongoBabyNameRepository } from '../../infrastructure/repositories/MongoBabyNameRepository';
@@ -136,6 +136,23 @@ router.get('/groups/:gid/ratings/mine', authMiddleware, async (req: Authenticate
     res.json(ratings.map((r) => r.toJSON()));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/names/:id/rate
+router.delete('/names/:id/rate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Check if group is closed
+    const babyName = await babyNameRepository.findById(req.params.id);
+    if (babyName) {
+      const group = await groupRepository.findById(babyName.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden eliminar votos.' });
+    }
+    const deleteRating = new DeleteRating(ratingRepository, babyNameRepository);
+    await deleteRating.execute(req.userId!, req.params.id);
+    res.json({ message: 'Rating deleted' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
   }
 });
 

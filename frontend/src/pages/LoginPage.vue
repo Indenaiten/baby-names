@@ -59,6 +59,9 @@
       <p class="text-center text-xs text-gray-600 mt-6">
         ¿No tienes cuenta? Pide a un administrador que te cree una.
       </p>
+      <p class="text-center text-xs text-gray-600 mt-6">
+        Ángel HS & Patricia FG
+      </p>
     </div>
   </div>
 </template>

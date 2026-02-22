@@ -80,14 +80,45 @@ export const useNameStore = defineStore('name', () => {
   async function rateName(nameId: string, score: number) {
     const { data } = await api.post(`/names/${nameId}/rate`, { score })
     unratedNames.value = unratedNames.value.filter((n) => n.id !== nameId)
+    
     // Update the name's average in local state
     const name = names.value.find((n) => n.id === nameId)
     if (name) {
-      const total = name.totalRatings
-      name.averageScore = Math.round(((name.averageScore * total + score) / (total + 1)) * 100) / 100
-      name.totalRatings = total + 1
+      const existingRating = myRatings.value.find(r => r.nameId === nameId)
+      if (existingRating) {
+        // Update: replace old score with new score
+        const total = name.totalRatings
+        name.averageScore = Math.round(((name.averageScore * total - existingRating.score + score) / total) * 100) / 100
+        existingRating.score = score
+      } else {
+        // New rating: increment count
+        const total = name.totalRatings
+        name.averageScore = Math.round(((name.averageScore * total + score) / (total + 1)) * 100) / 100
+        name.totalRatings = total + 1
+        // Add to myRatings
+        myRatings.value.push(data)
+      }
     }
     return data
+  }
+
+  async function deleteRating(nameId: string) {
+    await api.delete(`/names/${nameId}/rate`)
+    
+    const name = names.value.find((n) => n.id === nameId)
+    const ratingIndex = myRatings.value.findIndex(r => r.nameId === nameId)
+    
+    if (name && ratingIndex !== -1) {
+      const score = myRatings.value[ratingIndex].score
+      const total = name.totalRatings
+      if (total > 1) {
+        name.averageScore = Math.round(((name.averageScore * total - score) / (total - 1)) * 100) / 100
+      } else {
+        name.averageScore = 0
+      }
+      name.totalRatings = total - 1
+      myRatings.value.splice(ratingIndex, 1)
+    }
   }
 
   async function fetchRatings(nameId: string) {
@@ -119,6 +150,6 @@ export const useNameStore = defineStore('name', () => {
   return {
     names, myNames, unratedNames, ratings, myRatings, comments, loading,
     fetchNames, fetchMyNames, fetchUnratedNames, proposeName, deleteName,
-    rateName, fetchRatings, fetchMyRatings, fetchComments, addComment, exportNames,
+    rateName, deleteRating, fetchRatings, fetchMyRatings, fetchComments, addComment, exportNames,
   }
 })

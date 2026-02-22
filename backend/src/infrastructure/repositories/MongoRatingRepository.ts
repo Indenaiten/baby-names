@@ -78,6 +78,16 @@ export class MongoRatingRepository implements IRatingRepository {
     return this.toDomain(doc);
   }
 
+  async update(id: string, rating: Partial<Rating>): Promise<Rating> {
+    const doc = await RatingModel.findByIdAndUpdate(id, { score: rating.score }, { new: true }).populate('userId', 'username');
+    if (!doc) throw new Error('Rating not found');
+    return this.toDomain(doc);
+  }
+
+  async delete(id: string): Promise<void> {
+    await RatingModel.findByIdAndDelete(id);
+  }
+
   async getAverageScore(nameId: string): Promise<{ average: number; count: number }> {
     const result = await RatingModel.aggregate([
       { $match: { nameId: require('mongoose').Types.ObjectId.createFromHexString(nameId) } },
