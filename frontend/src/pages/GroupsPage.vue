@@ -92,9 +92,9 @@
               >
                 <div class="min-w-0">
                   <p class="text-sm text-white font-medium truncate">
-                    {{ user.firstName || user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.username }}
+                    {{ user.firstName }} {{ user.lastName }}
                   </p>
-                  <p class="text-xs text-gray-400 truncate">@{{ user.username }}</p>
+                  <p class="text-xs text-gray-500 truncate">@{{ user.username }}</p>
                 </div>
                 <span class="text-xs text-primary-400 shrink-0">Invitar</span>
               </button>
@@ -335,10 +335,7 @@ onMounted(() => {
 function getMemberDisplay(userId: string): string {
   const info = groupStore.getMemberInfo(userId)
   if (!info) return userId.slice(-8)
-  if (info.firstName || info.lastName) {
-    return `${info.firstName} ${info.lastName}`.trim()
-  }
-  return info.username
+  return `${info.firstName} ${info.lastName}`
 }
 
 function getMemberSubtitle(userId: string): string {

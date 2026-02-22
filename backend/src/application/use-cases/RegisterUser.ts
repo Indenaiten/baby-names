@@ -11,7 +11,7 @@ export interface RegisterUserDTO {
 }
 
 export class RegisterUser {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private userRepository: IUserRepository) { }
 
   async execute(dto: RegisterUserDTO, requesterRole: UserRole): Promise<User> {
     // Only root can create admins, root/admin can create users
@@ -32,6 +32,10 @@ export class RegisterUser {
     }
 
     const passwordHash = await AuthService.hashPassword(dto.password);
+
+    if (!dto.firstName || dto.firstName.trim().length === 0) {
+      throw new Error('First name is required');
+    }
 
     const user = User.create({
       username: dto.username,
