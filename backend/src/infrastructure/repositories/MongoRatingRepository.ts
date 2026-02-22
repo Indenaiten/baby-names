@@ -4,38 +4,46 @@ import { RatingModel } from '../database/models/RatingModel';
 
 export class MongoRatingRepository implements IRatingRepository {
   private toDomain(doc: any): Rating {
-    const userObj = typeof doc.userId === 'object' && doc.userId._id 
-      ? doc.userId 
+    const userObj = typeof doc.userId === 'object' && doc.userId._id
+      ? doc.userId
       : { _id: doc.userId };
+
+    const fullName = [userObj.firstName, userObj.lastName]
+      .filter(Boolean)
+      .join(' ');
+
+    const userDisplay = fullName
+      ? `${fullName} (@${userObj.username})`
+      : userObj.username;
 
     return Rating.create({
       id: doc._id.toString(),
       nameId: doc.nameId.toString(),
       userId: userObj._id.toString(),
-      userName: userObj.username,
+      userName: userDisplay,
       score: doc.score,
       createdAt: doc.createdAt,
     });
   }
 
   async findById(id: string): Promise<Rating | null> {
-    const doc = await RatingModel.findById(id).populate('userId', 'username');
+    const doc = await RatingModel.findById(id).populate('userId', 'username firstName lastName');
     if (!doc) return null;
     return this.toDomain(doc);
   }
 
   async findByNameId(nameId: string): Promise<Rating[]> {
-    const docs = await RatingModel.find({ nameId }).sort({ createdAt: -1 }).populate('userId', 'username');
+    const docs = await RatingModel.find({ nameId }).sort({ createdAt: -1 }).populate('userId', 'username firstName lastName');
     return docs.map((doc) => this.toDomain(doc));
   }
 
   async findByUserId(userId: string): Promise<Rating[]> {
-    const docs = await RatingModel.find({ userId }).sort({ createdAt: -1 }).populate('userId', 'username');
+    const docs = await RatingModel.find({ userId }).sort({ createdAt: -1 }).populate('userId', 'username firstName lastName');
     return docs.map((doc) => this.toDomain(doc));
   }
 
   async findByUserAndName(userId: string, nameId: string): Promise<Rating | null> {
-    const doc = await RatingModel.findOne({ userId, nameId }).populate('userId', 'username');
+    const doc = await RatingModel.findOne({ userId, nameId }).populate('userId', 'username firstName lastName');
     if (!doc) return null;
     return this.toDomain(doc);
   }
@@ -74,12 +82,12 @@ export class MongoRatingRepository implements IRatingRepository {
       score: rating.score,
     });
     // Populate user info after creation
-    await doc.populate('userId', 'username');
+    await doc.populate('userId', 'username firstName lastName');
     return this.toDomain(doc);
   }
 
   async update(id: string, rating: Partial<Rating>): Promise<Rating> {
-    const doc = await RatingModel.findByIdAndUpdate(id, { score: rating.score }, { new: true }).populate('userId', 'username');
+    const doc = await RatingModel.findByIdAndUpdate(id, { score: rating.score }, { new: true }).populate('userId', 'username firstName lastName');
     if (!doc) throw new Error('Rating not found');
     return this.toDomain(doc);
   }

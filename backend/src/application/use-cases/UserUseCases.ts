@@ -3,7 +3,7 @@ import { UserRole } from '../../domain/entities/User';
 import { User } from '../../domain/entities/User';
 
 export class GetAllUsers {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private userRepository: IUserRepository) { }
 
   async execute(requesterRole: UserRole): Promise<User[]> {
     if (requesterRole !== UserRole.ROOT && requesterRole !== UserRole.ADMIN) {
@@ -14,7 +14,7 @@ export class GetAllUsers {
 }
 
 export class DeleteUser {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private userRepository: IUserRepository) { }
 
   async execute(userId: string, requesterRole: UserRole): Promise<void> {
     if (requesterRole !== UserRole.ROOT && requesterRole !== UserRole.ADMIN) {
@@ -37,7 +37,7 @@ export class DeleteUser {
 }
 
 export class GetUserProfile {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private userRepository: IUserRepository) { }
 
   async execute(userId: string): Promise<User> {
     const user = await this.userRepository.findById(userId);
@@ -47,7 +47,7 @@ export class GetUserProfile {
 }
 
 export class UpdateUserRole {
-  constructor(private userRepository: IUserRepository) {}
+  constructor(private userRepository: IUserRepository) { }
 
   async execute(targetUserId: string, newRole: UserRole, requesterId: string, requesterRole: UserRole): Promise<void> {
     if (requesterRole !== UserRole.ROOT && requesterRole !== UserRole.ADMIN) {
@@ -74,5 +74,38 @@ export class UpdateUserRole {
     }
 
     await this.userRepository.update(targetUserId, { role: newRole } as any);
+  }
+}
+
+export class UpdateUser {
+  constructor(private userRepository: IUserRepository) { }
+
+  async execute(userId: string, data: { username?: string; firstName?: string; lastName?: string }, requesterRole: UserRole): Promise<User> {
+    if (requesterRole !== UserRole.ROOT && requesterRole !== UserRole.ADMIN) {
+      throw new Error('Only admins can update users');
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    if (user.role === UserRole.ROOT && requesterRole !== UserRole.ROOT) {
+      throw new Error('Only root can update root user');
+    }
+
+    if (data.username) {
+      const existing = await this.userRepository.findByUsername(data.username);
+      if (existing && existing.id !== userId) {
+        throw new Error('Username already in use');
+      }
+    }
+
+    if (data.firstName !== undefined && data.firstName.trim().length === 0) {
+      throw new Error('First name cannot be empty');
+    }
+
+    const updatedUser = await this.userRepository.update(userId, data as any);
+    if (!updatedUser) throw new Error('Error updating user');
+
+    return updatedUser;
   }
 }

@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { LoginUser } from '../../application/use-cases/LoginUser';
 import { RegisterUser } from '../../application/use-cases/RegisterUser';
-import { GetAllUsers, DeleteUser, GetUserProfile, UpdateUserRole } from '../../application/use-cases/UserUseCases';
+import { GetAllUsers, DeleteUser, GetUserProfile, UpdateUserRole, UpdateUser } from '../../application/use-cases/UserUseCases';
 import { ChangePassword, ResetPassword } from '../../application/use-cases/PasswordUseCases';
 import { AuthenticatedRequest, authMiddleware, adminMiddleware } from '../middleware/auth';
 import { MongoUserRepository } from '../../infrastructure/repositories/MongoUserRepository';
@@ -144,6 +144,25 @@ router.patch('/users/:id/role', authMiddleware, adminMiddleware, async (req: Aut
       req.userRole as UserRole
     );
     res.json({ message: 'User role updated' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PUT /api/users/:id
+router.put('/users/:id', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updateUser = new UpdateUser(userRepository);
+    const user = await updateUser.execute(
+      req.params.id,
+      {
+        username: req.body.username,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+      },
+      req.userRole as UserRole
+    );
+    res.json(user.toJSON());
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

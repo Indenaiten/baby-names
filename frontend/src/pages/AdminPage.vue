@@ -16,7 +16,11 @@
           {{ createError }}
         </div>
         <form @submit.prevent="handleCreate" class="space-y-4">
-          <input v-model="form.username" class="input-field" placeholder="Nombre de usuario" required />
+          <input v-model="form.username" class="input-field" placeholder="Nombre de usuario (@username)" required />
+          <div class="grid grid-cols-2 gap-3">
+            <input v-model="form.firstName" class="input-field" placeholder="Nombre" required />
+            <input v-model="form.lastName" class="input-field" placeholder="Apellidos (opcional)" />
+          </div>
           <input v-model="form.password" class="input-field" placeholder="Contraseña" type="password" required />
           <select v-model="form.role" class="input-field">
             <option value="user">Usuario</option>
@@ -49,6 +53,29 @@
       </div>
     </div>
 
+    <!-- Edit user modal -->
+    <div v-if="editUser" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="editUser = null">
+      <div class="card w-full max-w-md animate-scale-in">
+        <h2 class="text-xl font-semibold mb-4">Editar usuario</h2>
+        <div v-if="editError" class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+          {{ editError }}
+        </div>
+        <form @submit.prevent="handleUpdate" class="space-y-4">
+          <input v-model="editForm.username" class="input-field" placeholder="Nombre de usuario (@username)" required />
+          <div class="grid grid-cols-2 gap-3">
+            <input v-model="editForm.firstName" class="input-field" placeholder="Nombre" required />
+            <input v-model="editForm.lastName" class="input-field" placeholder="Apellidos (opcional)" />
+          </div>
+          <div class="flex gap-3">
+            <button type="button" @click="editUser = null" class="btn-secondary flex-1">Cancelar</button>
+            <button type="submit" class="btn-primary flex-1" :disabled="updating">
+              {{ updating ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="userStore.loading" class="flex justify-center py-20">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
@@ -69,7 +96,12 @@
           <tbody class="divide-y divide-gray-800/50">
             <tr v-for="user in userStore.users" :key="user.id" class="hover:bg-gray-800/30 transition-colors">
               <td class="px-6 py-4">
-                <span class="font-medium text-white">{{ user.username }}</span>
+                <div class="flex flex-col">
+                  <span class="font-medium text-white">
+                    {{ user.firstName }} {{ user.lastName }}
+                  </span>
+                  <span class="text-xs text-gray-500">@{{ user.username }}</span>
+                </div>
               </td>
               <td class="px-6 py-4">
                 <select
@@ -88,16 +120,23 @@
               </td>
               <td class="px-6 py-4 text-gray-500 text-sm">{{ new Date(user.createdAt).toLocaleDateString('es') }}</td>
               <td class="px-6 py-4 text-right">
-                <div v-if="user.role !== 'root' && canDelete(user)" class="flex items-center justify-end gap-3">
+                <div v-if="canEdit(user)" class="flex items-center justify-end gap-3 text-xs">
+                  <button
+                    @click="openEdit(user)"
+                    class="text-primary-400 hover:text-primary-300 font-medium transition-colors"
+                  >
+                    Editar
+                  </button>
                   <button
                     @click="openReset(user)"
-                    class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors"
+                    class="text-gray-400 hover:text-white font-medium transition-colors"
                   >
                     Reset Pass
                   </button>
                   <button
                     @click="handleDelete(user)"
-                    class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
+                    v-if="user.role !== 'root' && canDelete(user)"
+                    class="text-red-400 hover:text-red-300 font-medium transition-colors"
                   >
                     Eliminar
                   </button>
@@ -126,6 +165,8 @@ const createError = ref('')
 
 const form = reactive({
   username: '',
+  firstName: '',
+  lastName: '',
   password: '',
   role: 'user',
 })
@@ -135,6 +176,16 @@ const resetUser = ref<any>(null)
 const resetPassword = ref('')
 const resetting = ref(false)
 
+// Edit state
+const editUser = ref<any>(null)
+const updating = ref(false)
+const editError = ref('')
+const editForm = reactive({
+  username: '',
+  firstName: '',
+  lastName: '',
+})
+
 onMounted(() => {
   userStore.fetchUsers()
 })
@@ -143,9 +194,11 @@ async function handleCreate() {
   creating.value = true
   createError.value = ''
   try {
-    await userStore.createUser(form.username, form.password, form.role)
+    await userStore.createUser(form.username, form.firstName, form.lastName, form.password, form.role)
     showCreate.value = false
     form.username = ''
+    form.firstName = ''
+    form.lastName = ''
     form.password = ''
     form.role = 'user'
   } catch (e: any) {
@@ -160,6 +213,39 @@ function canDelete(user: any) {
   if (authStore.isRoot) return true
   if (authStore.isAdmin && user.role === 'user') return true
   return false
+}
+
+function canEdit(user: any) {
+  if (authStore.isRoot) return true
+  if (authStore.isAdmin && user.role === 'user') return true
+  if (authStore.user?.id === user.id) return true
+  return false
+}
+
+function openEdit(user: any) {
+  editUser.value = user
+  editError.value = ''
+  editForm.username = user.username
+  editForm.firstName = user.firstName
+  editForm.lastName = user.lastName
+}
+
+async function handleUpdate() {
+  if (!editUser.value) return
+  updating.value = true
+  editError.value = ''
+  try {
+    await userStore.updateUser(editUser.value.id, {
+      username: editForm.username,
+      firstName: editForm.firstName,
+      lastName: editForm.lastName,
+    })
+    editUser.value = null
+  } catch (e: any) {
+    editError.value = e.response?.data?.error || 'Error al actualizar usuario'
+  } finally {
+    updating.value = false
+  }
 }
 
 function canChangeRole(user: any) {
