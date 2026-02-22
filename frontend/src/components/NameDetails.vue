@@ -11,6 +11,49 @@
       </div>
     </div>
 
+    <!-- Family Context -->
+    <div v-if="groupStore.currentGroup" class="space-y-3">
+      <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+        <span>👪</span> Contexto familiar
+      </h4>
+      <div class="grid grid-cols-1 gap-2">
+        <div v-if="groupStore.currentGroup.parents.length" class="p-3 bg-gray-800/20 rounded-xl border border-gray-700/30 flex flex-wrap gap-2">
+          <span class="text-[10px] text-gray-500 w-full mb-1">PADRES:</span>
+          <span v-for="(p, i) in groupStore.currentGroup.parents" :key="i" class="text-xs text-gray-300 bg-gray-700/50 px-2 py-1 rounded-lg">
+            {{ p.firstName }} {{ p.lastName1 }}
+          </span>
+        </div>
+        <div v-if="groupStore.currentGroup.siblings.length" class="p-3 bg-gray-800/20 rounded-xl border border-gray-700/30 flex flex-wrap gap-2">
+          <span class="text-[10px] text-gray-500 w-full mb-1">HERMANOS:</span>
+          <span v-for="(s, i) in groupStore.currentGroup.siblings" :key="i" class="text-xs text-gray-300 bg-gray-700/50 px-2 py-1 rounded-lg">
+            {{ s.firstName }} {{ s.lastName1 }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Imagine Tool -->
+    <div v-if="groupStore.currentGroup" class="bg-gradient-to-br from-primary-600/10 to-transparent p-5 rounded-2xl border border-primary-500/20 shadow-lg shadow-primary-500/5">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-sm font-bold text-primary-300 flex items-center gap-2">
+          <span>🔮</span> ¿Cómo suena en el mundo real?
+        </h4>
+        <button @click="refreshScenarios" class="text-[10px] font-bold text-primary-400 hover:text-primary-300 uppercase tracking-tighter">Refrescar ✨</button>
+      </div>
+      
+      <div class="space-y-4">
+        <div v-for="(scene, i) in scenarios" :key="i" class="animate-fade-in" :style="{ animationDelay: `${i * 100}ms` }">
+          <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">{{ scene.title }}</p>
+          <div class="bg-gray-900/40 p-3 rounded-xl border border-gray-800 italic text-sm text-gray-300 leading-relaxed relative overflow-hidden group">
+             <span class="absolute left-0 top-0 bottom-0 w-1 bg-primary-500/30 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+             "{{ scene.text }}"
+          </div>
+        </div>
+      </div>
+      
+      <p class="text-[10px] text-gray-500 mt-4 text-center italic">Basado en los datos de tu grupo familiar</p>
+    </div>
+
     <!-- Description -->
     <div v-if="name.description" class="bg-gray-800/20 p-4 rounded-xl border border-dashed border-gray-700/50">
       <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-2">
@@ -101,7 +144,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useGroupStore } from '@/stores/group'
+
+const groupStore = useGroupStore()
+const refreshKey = ref(0)
 
 const props = defineProps<{
   name: any
@@ -118,6 +165,66 @@ const rootComments = computed(() => props.comments.filter((c) => !c.parentId))
 function getReplies(parentId: string) {
   return props.comments.filter((c) => c.parentId === parentId)
 }
+
+function refreshScenarios() {
+  refreshKey.value++
+}
+
+const scenarios = computed(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _ = refreshKey.value
+  const g = groupStore.currentGroup
+  if (!g) return []
+  
+  const name = props.name.name
+  const s1 = g.preferredSurnames?.lastName1 || ''
+  const s2 = g.preferredSurnames?.lastName2 || ''
+  const fullName = `${name} ${s1} ${s2}`.trim()
+  
+  const res = []
+  
+  // Cotidiano
+  res.push({
+    title: '🏠 Cotidiano',
+    text: `¡${name}, a cenar! Que se enfría la sopa.`
+  })
+  
+  if (g.siblings.length > 0) {
+    const bro = g.siblings[0].firstName
+    res.push({
+      title: '🧒 Con hermanos',
+      text: `¡${name}, deja de molestar a ${bro}! Portaos bien.`
+    })
+  } else {
+    res.push({
+      title: '🏫 Colegio',
+      text: `¿Has hecho ya los deberes, ${name}?`
+    })
+  }
+  
+  // Solemne
+  res.push({
+    title: '🎓 Solemne',
+    text: `Concedemos el título de Doctor Honoris Causa a Don/Doña ${fullName}.`
+  })
+  
+  // Pase de lista
+  if (g.parents.length > 0) {
+    const familyList = [...g.parents.map(p => p.firstName), ...g.siblings.map(s => s.firstName), name]
+    res.push({
+      title: '📢 Pase de lista',
+      text: `${familyList.join(', ')}... ¡Estamos todos! Vámonos.`
+    })
+  }
+
+  // Megafonía
+  res.push({
+    title: '📣 Megafonía',
+    text: `Se ruega al tutor de ${name} que acuda a la zona de información.`
+  })
+
+  return res
+})
 
 function formatDate(dateStr: string) {
   const date = new Date(dateStr)

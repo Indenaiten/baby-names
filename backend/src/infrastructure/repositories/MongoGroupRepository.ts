@@ -14,6 +14,9 @@ export class MongoGroupRepository implements IGroupRepository {
         status: m.status as MemberStatus,
         joinedAt: m.joinedAt,
       })),
+      parents: doc.parents,
+      siblings: doc.siblings,
+      preferredSurnames: doc.preferredSurnames,
       closed: doc.closed || false,
       createdAt: doc.createdAt,
     });
@@ -45,6 +48,9 @@ export class MongoGroupRepository implements IGroupRepository {
         status: m.status,
         joinedAt: m.joinedAt,
       })),
+      parents: group.parents,
+      siblings: group.siblings,
+      preferredSurnames: group.preferredSurnames,
     });
     return this.toDomain(doc);
   }

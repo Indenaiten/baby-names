@@ -36,7 +36,10 @@
         >
           <div class="flex-1">
             <div class="flex items-center gap-2">
-              <h3 class="font-semibold text-white">{{ name.name }}</h3>
+              <h3 class="font-semibold text-white">
+                {{ name.name }}
+                <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
+              </h3>
               <span :class="genderBadgeClass(name.gender)">{{ genderLabel(name.gender) }}</span>
             </div>
             <p class="text-sm text-gray-500 mt-1">{{ name.totalRatings }} votos · Promedio: {{ name.averageScore > 0 ? name.averageScore.toFixed(1) : '—' }}</p>
@@ -85,7 +88,10 @@
         >
           <div class="flex-1">
             <div class="flex items-center gap-2 mb-1">
-              <h3 class="font-semibold text-white">{{ getNameFromRating(rating.nameId)?.name || 'Cargando...' }}</h3>
+              <h3 class="font-semibold text-white">
+                {{ getNameFromRating(rating.nameId)?.name || 'Cargando...' }}
+                <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
+              </h3>
               <span v-if="getNameFromRating(rating.nameId)" :class="genderBadgeClass(getNameFromRating(rating.nameId).gender)">
                 {{ genderLabel(getNameFromRating(rating.nameId).gender) }}
               </span>
@@ -118,6 +124,7 @@
         <div class="flex items-center justify-between p-4 border-b border-gray-800">
           <h3 class="font-bold text-xl text-white">
             {{ getNameFromRating(selectedNameId)?.name }}
+            <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
           </h3>
           <button @click="selectedNameId = null" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
@@ -163,6 +170,12 @@ const groupStore = useGroupStore()
 const gid = computed(() => route.params.gid as string)
 const activeTab = ref('proposed')
 
+const getGroupSurnames = computed(() => {
+  const surnames = groupStore.currentGroup?.preferredSurnames
+  if (!surnames || (!surnames.lastName1 && !surnames.lastName2)) return ''
+  return `${surnames.lastName1} ${surnames.lastName2}`.trim()
+})
+
 const selectedNameId = ref<string | null>(null)
 const loadingRatings = ref(false)
 const loadingComments = ref(false)
@@ -170,6 +183,9 @@ const commentText = ref('')
 const replyTo = ref<string | null>(null)
 
 onMounted(async () => {
+  if (!groupStore.currentGroup || groupStore.currentGroup.id !== gid.value) {
+    await groupStore.fetchGroup(gid.value)
+  }
   await nameStore.fetchMyNames(gid.value)
   await nameStore.fetchMyRatings(gid.value)
   // Also fetch all names to have context for ratings (proposer names, etc)

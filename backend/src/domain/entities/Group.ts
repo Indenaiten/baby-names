@@ -16,11 +16,20 @@ export interface GroupMember {
   joinedAt: Date;
 }
 
+export interface FamilyMember {
+  firstName: string;
+  lastName1: string;
+  lastName2: string;
+}
+
 export interface GroupProps {
   id?: string;
   name: string;
   ownerId: string;
   members?: GroupMember[];
+  parents?: FamilyMember[];
+  siblings?: FamilyMember[];
+  preferredSurnames?: { lastName1: string; lastName2: string };
   closed?: boolean;
   createdAt?: Date;
 }
@@ -30,6 +39,9 @@ export class Group {
   public readonly name: string;
   public readonly ownerId: string;
   public readonly members: GroupMember[];
+  public readonly parents: FamilyMember[];
+  public readonly siblings: FamilyMember[];
+  public readonly preferredSurnames?: { lastName1: string; lastName2: string };
   public readonly closed: boolean;
   public readonly createdAt: Date;
 
@@ -45,6 +57,9 @@ export class Group {
         joinedAt: new Date(),
       },
     ];
+    this.parents = props.parents || [];
+    this.siblings = props.siblings || [];
+    this.preferredSurnames = props.preferredSurnames;
     this.closed = props.closed || false;
     this.createdAt = props.createdAt || new Date();
   }
@@ -90,6 +105,9 @@ export class Group {
       name: this.name,
       ownerId: this.ownerId,
       members: this.members,
+      parents: this.parents,
+      siblings: this.siblings,
+      preferredSurnames: this.preferredSurnames,
       closed: this.closed,
       createdAt: this.createdAt,
     };

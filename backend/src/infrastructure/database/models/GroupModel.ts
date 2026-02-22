@@ -9,9 +9,21 @@ export interface IGroupDocument extends Document {
     status: string;
     joinedAt: Date;
   }[];
+  parents: { firstName: string; lastName1: string; lastName2: string }[];
+  siblings: { firstName: string; lastName1: string; lastName2: string }[];
+  preferredSurnames?: { lastName1: string; lastName2: string };
   closed: boolean;
   createdAt: Date;
 }
+
+const FamilyMemberSchema = new Schema(
+  {
+    firstName: { type: String, required: true, trim: true },
+    lastName1: { type: String, required: true, trim: true },
+    lastName2: { type: String, required: true, trim: true },
+  },
+  { _id: false }
+);
 
 const GroupMemberSchema = new Schema(
   {
@@ -28,6 +40,12 @@ const GroupSchema = new Schema<IGroupDocument>(
     name: { type: String, required: true, trim: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     members: [GroupMemberSchema],
+    parents: [FamilyMemberSchema],
+    siblings: [FamilyMemberSchema],
+    preferredSurnames: {
+      lastName1: { type: String, trim: true },
+      lastName2: { type: String, trim: true },
+    },
     closed: { type: Boolean, default: false },
   },
   { timestamps: true }

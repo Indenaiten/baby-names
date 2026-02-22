@@ -10,13 +10,62 @@
 
     <!-- Create group modal -->
     <div v-if="showCreate" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showCreate = false">
-      <div class="card w-full max-w-md animate-scale-in">
-        <h2 class="text-xl font-semibold mb-4">Crear grupo</h2>
-        <form @submit.prevent="handleCreate" class="space-y-4">
-          <input v-model="newGroupName" class="input-field" placeholder="Nombre del grupo (ej: Familia García)" required autofocus />
-          <div class="flex gap-3">
+      <div class="card w-full max-w-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+        <h2 class="text-xl font-semibold mb-4">Crear grupo familiar</h2>
+        <form @submit.prevent="handleCreate" class="space-y-6">
+          <!-- Group Name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Nombre del grupo</label>
+            <input v-model="newGroupName" class="input-field" placeholder="ej: Familia García" required autofocus />
+          </div>
+
+          <!-- Parents -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-medium text-gray-400">Padres (mín. 1)</label>
+              <button type="button" @click="addParent" class="text-xs text-primary-400 hover:text-primary-300">+ Añadir padre/madre</button>
+            </div>
+            <div v-for="(p, i) in parents" :key="i" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-800/30 rounded-xl border border-gray-700/50 relative group">
+              <input v-model="p.firstName" class="input-field text-sm" placeholder="Nombre" required />
+              <input v-model="p.lastName1" class="input-field text-sm" placeholder="1º Apellido" required />
+              <input v-model="p.lastName2" class="input-field text-sm" placeholder="2º Apellido" required />
+              <button v-if="parents.length > 1" type="button" @click="removeParent(i)" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">✕</button>
+            </div>
+          </div>
+
+          <!-- Siblings -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-medium text-gray-400">Hermanos (opcional)</label>
+              <button type="button" @click="addSibling" class="text-xs text-primary-400 hover:text-primary-300">+ Añadir hermano/a</button>
+            </div>
+            <div v-for="(s, i) in siblings" :key="i" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-800/10 rounded-xl border border-dashed border-gray-700/50 relative group">
+              <input v-model="s.firstName" class="input-field text-sm" placeholder="Nombre" required />
+              <input v-model="s.lastName1" class="input-field text-sm" placeholder="1º Apellido" required />
+              <input v-model="s.lastName2" class="input-field text-sm" placeholder="2º Apellido" required />
+              <button type="button" @click="removeSibling(i)" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">✕</button>
+            </div>
+          </div>
+
+          <!-- Preferred Surnames -->
+          <div class="bg-primary-500/5 border border-primary-500/20 p-4 rounded-xl">
+            <label class="block text-sm font-medium text-primary-300 mb-2">Apellidos preferentes para el bebé</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-[10px] text-gray-500 uppercase font-bold mb-1 block pl-1">Primer Apellido</span>
+                <input v-model="preferredSurnames.lastName1" class="input-field text-sm" placeholder="Apellido 1" required />
+              </div>
+              <div>
+                <span class="text-[10px] text-gray-500 uppercase font-bold mb-1 block pl-1">Segundo Apellido</span>
+                <input v-model="preferredSurnames.lastName2" class="input-field text-sm" placeholder="Apellido 2" required />
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-500 mt-2 italic">Se usarán por defecto para visualizar cómo queda cada nombre propuesto.</p>
+          </div>
+
+          <div class="flex gap-3 pt-2">
             <button type="button" @click="showCreate = false" class="btn-secondary flex-1">Cancelar</button>
-            <button type="submit" class="btn-primary flex-1" :disabled="creating">Crear</button>
+            <button type="submit" class="btn-primary flex-1" :disabled="creating">Crear grupo</button>
           </div>
         </form>
       </div>
@@ -59,6 +108,60 @@
               {{ settingsGroup.closed ? 'Reabrir' : 'Cerrar' }}
             </button>
           </div>
+        </div>
+
+        <!-- Family Context Editing -->
+        <div class="mb-6 space-y-4 pt-4 border-t border-gray-800">
+          <h3 class="text-sm font-bold text-primary-400 flex items-center gap-2 uppercase tracking-wider">
+            <span>👪</span> Contexto familiar (Padres/Hermanos)
+          </h3>
+          
+          <!-- Parents in Settings -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-medium text-gray-500 uppercase">Padres</label>
+              <button type="button" @click="addParent" class="text-[10px] font-bold text-primary-400 hover:text-primary-300 uppercase tracking-tighter transition-colors">+ Añadir</button>
+            </div>
+            <div v-for="(p, i) in parents" :key="i" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-800/30 rounded-xl border border-gray-700/50 relative group">
+              <input v-model="p.firstName" class="input-field text-xs" placeholder="Nombre" required />
+              <input v-model="p.lastName1" class="input-field text-xs" placeholder="1º Apellido" required />
+              <input v-model="p.lastName2" class="input-field text-xs" placeholder="2º Apellido" required />
+              <button v-if="parents.length > 1" type="button" @click="removeParent(i)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">✕</button>
+            </div>
+          </div>
+
+          <!-- Siblings in Settings -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-medium text-gray-500 uppercase">Hermanos</label>
+              <button type="button" @click="addSibling" class="text-[10px] font-bold text-primary-400 hover:text-primary-300 uppercase tracking-tighter transition-colors">+ Añadir</button>
+            </div>
+            <div v-for="(s, i) in siblings" :key="i" class="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-800/10 rounded-xl border border-dashed border-gray-700/50 relative group">
+              <input v-model="s.firstName" class="input-field text-xs" placeholder="Nombre" required />
+              <input v-model="s.lastName1" class="input-field text-xs" placeholder="1º Apellido" required />
+              <input v-model="s.lastName2" class="input-field text-xs" placeholder="2º Apellido" required />
+              <button type="button" @click="removeSibling(i)" class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">✕</button>
+            </div>
+          </div>
+
+          <!-- Preferred Surnames in Settings -->
+          <div class="bg-primary-500/5 border border-primary-500/10 p-4 rounded-xl">
+            <label class="block text-xs font-bold text-primary-300 mb-3 uppercase tracking-tighter">Apellidos preferentes para el bebé</label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 block pl-1">Apellido 1</span>
+                <input v-model="preferredSurnames.lastName1" class="input-field text-xs" required />
+              </div>
+              <div>
+                <span class="text-[9px] text-gray-500 uppercase font-bold mb-1 block pl-1">Apellido 2</span>
+                <input v-model="preferredSurnames.lastName2" class="input-field text-xs" required />
+              </div>
+            </div>
+          </div>
+
+          <button @click="handleUpdateFamily" class="btn-primary w-full text-xs py-2.5" :disabled="updatingFamily">
+            {{ updatingFamily ? 'Guardando...' : '💾 Actualizar contexto familiar' }}
+          </button>
         </div>
 
         <!-- Members list -->
@@ -309,6 +412,22 @@ const showCreate = ref(false)
 const newGroupName = ref('')
 const creating = ref(false)
 const responding = ref(false)
+const updatingFamily = ref(false)
+
+// Genealogical data
+const parents = ref([{ firstName: '', lastName1: '', lastName2: '' }])
+const siblings = ref<{ firstName: string; lastName1: string; lastName2: string }[]>([])
+const preferredSurnames = ref({ lastName1: '', lastName2: '' })
+
+// Auto-suggest surnames based on parents
+watch(parents, (newParents) => {
+  if (newParents.length >= 1 && !preferredSurnames.value.lastName1) {
+    preferredSurnames.value.lastName1 = newParents[0].lastName1
+  }
+  if (newParents.length >= 2 && !preferredSurnames.value.lastName2) {
+    preferredSurnames.value.lastName2 = newParents[1].lastName1
+  }
+}, { deep: true })
 
 // Settings modal state
 const settingsGroup = ref<any>(null)
@@ -344,11 +463,32 @@ function getMemberSubtitle(userId: string): string {
   return `@${info.username}`
 }
 
+function addParent() {
+  parents.value.push({ firstName: '', lastName1: '', lastName2: '' })
+}
+function removeParent(index: number) {
+  parents.value.splice(index, 1)
+}
+function addSibling() {
+  siblings.value.push({ firstName: '', lastName1: '', lastName2: '' })
+}
+function removeSibling(index: number) {
+  siblings.value.splice(index, 1)
+}
+
 async function handleCreate() {
   creating.value = true
   try {
-    const group = await groupStore.createGroup(newGroupName.value)
+    const group = await groupStore.createGroup(
+      newGroupName.value,
+      parents.value,
+      siblings.value,
+      preferredSurnames.value
+    )
     newGroupName.value = ''
+    parents.value = [{ firstName: '', lastName1: '', lastName2: '' }]
+    siblings.value = []
+    preferredSurnames.value = { lastName1: '', lastName2: '' }
     showCreate.value = false
     selectGroup(group)
   } finally {
@@ -367,9 +507,37 @@ async function openSettings(group: any) {
   showInvite.value = false
   searchQuery.value = ''
   searchResults.value = []
+  
+  // Initialize family data for editing
+  parents.value = group.parents && group.parents.length > 0 
+    ? group.parents.map((p: any) => ({ ...p }))
+    : [{ firstName: '', lastName1: '', lastName2: '' }]
+  siblings.value = group.siblings ? group.siblings.map((s: any) => ({ ...s })) : []
+  preferredSurnames.value = group.preferredSurnames 
+    ? { ...group.preferredSurnames }
+    : { lastName1: '', lastName2: '' }
+
   // Load member details
   const memberIds = group.members.map((m: any) => m.userId)
   await groupStore.loadMemberDetails(memberIds)
+}
+
+async function handleUpdateFamily() {
+  if (!settingsGroup.value) return
+  updatingFamily.value = true
+  try {
+    const updated = await groupStore.updateGroupFamilyContext(
+      settingsGroup.value.id,
+      parents.value,
+      siblings.value,
+      preferredSurnames.value
+    )
+    settingsGroup.value = { ...updated }
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al actualizar el contexto familiar')
+  } finally {
+    updatingFamily.value = false
+  }
 }
 
 function handleSearch() {
