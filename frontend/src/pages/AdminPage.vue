@@ -217,8 +217,8 @@ function canDelete(user: any) {
 
 function canEdit(user: any) {
   if (authStore.isRoot) return true
-  if (authStore.isAdmin && user.role === 'user') return true
-  if (authStore.user?.id === user.id) return true
+  if (user.role === 'root') return false
+  if (authStore.isAdmin) return true
   return false
 }
 
@@ -252,7 +252,7 @@ function canChangeRole(user: any) {
   if (user.role === 'root') return false
   if (authStore.user?.id === user.id) return false
   if (authStore.isRoot) return true
-  if (authStore.isAdmin && user.role === 'user') return true
+  if (authStore.isAdmin) return true
   return false
 }
 

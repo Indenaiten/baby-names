@@ -69,9 +69,7 @@ export class UpdateUserRole {
       throw new Error('Cannot change root user role');
     }
 
-    if (targetUser.role === UserRole.ADMIN && requesterRole !== UserRole.ROOT) {
-      throw new Error('Only root can change admin roles');
-    }
+    // Admins can change roles of anyone except root
 
     await this.userRepository.update(targetUserId, { role: newRole } as any);
   }
@@ -88,13 +86,9 @@ export class UpdateUser {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new Error('User not found');
 
+    // Protection: admins cannot update the root user
     if (user.role === UserRole.ROOT && requesterRole !== UserRole.ROOT) {
       throw new Error('Only root can update root user');
-    }
-
-    // Protection: admins cannot update other admins
-    if (user.role === UserRole.ADMIN && requesterRole !== UserRole.ROOT && user.id !== userId) {
-      throw new Error('Only root can update other admin users');
     }
 
     if (data.username) {
