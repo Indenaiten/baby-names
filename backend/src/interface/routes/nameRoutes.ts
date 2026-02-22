@@ -8,6 +8,7 @@ import {
   ExportNames,
   CastDecision,
   SetWinner,
+  UpdateNameDescription,
 } from '../../application/use-cases/NameUseCases';
 import { RateName, GetRatingsByName, GetUserRatingsInGroup, DeleteRating } from '../../application/use-cases/RatingUseCases';
 import { AddComment, GetCommentsByName } from '../../application/use-cases/CommentUseCases';
@@ -208,6 +209,17 @@ router.post('/names/:id/winner', authMiddleware, async (req: AuthenticatedReques
   try {
     const setWinner = new SetWinner(babyNameRepository, groupRepository);
     const name = await setWinner.execute(req.params.id, req.userId!, req.body.isWinner, req.userRole);
+    res.json(name.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PATCH /api/names/:id/description
+router.patch('/names/:id/description', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updateDescription = new UpdateNameDescription(babyNameRepository, groupRepository);
+    const name = await updateDescription.execute(req.params.id, req.userId!, req.body.description, req.userRole);
     res.json(name.toJSON());
   } catch (error: any) {
     res.status(400).json({ error: error.message });

@@ -1,13 +1,67 @@
 <template>
   <div class="space-y-4">
     <!-- Proposer Info -->
-    <div class="flex items-center gap-3 bg-gray-800/30 p-3 rounded-xl border border-gray-700/50">
-      <div class="w-10 h-10 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400">
-        👤
+    <div class="bg-gray-800/30 p-3 rounded-xl border border-gray-700/50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-primary-600/20 flex items-center justify-center text-primary-400">
+          👤
+        </div>
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Propuesto por</p>
+          <p class="text-white font-medium">{{ name.proposerName || 'Usuario desconocido' }}</p>
+        </div>
       </div>
-      <div>
-        <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Propuesto por</p>
-        <p class="text-white font-medium">{{ name.proposerName || 'Usuario desconocido' }}</p>
+
+      <!-- Description below proposer -->
+      <div v-if="name.description || isProposer" class="mt-3 pt-3 border-t border-gray-700/50">
+        <div v-if="!editingDescription">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1">
+              <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-2">
+                <span>📝</span> Descripción
+              </p>
+              <p v-if="name.description" class="text-gray-300 text-sm italic leading-relaxed">
+                "{{ name.description }}"
+              </p>
+              <p v-else class="text-gray-500 text-sm italic">
+                Sin descripción
+              </p>
+            </div>
+            <button
+              v-if="isProposer"
+              @click="startEditingDescription"
+              class="text-xs text-primary-400 hover:text-primary-300 transition-colors px-2 py-1 rounded hover:bg-primary-400/10"
+            >
+              {{ name.description ? 'Editar' : 'Añadir' }}
+            </button>
+          </div>
+        </div>
+        <div v-else class="space-y-2">
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-2">
+            <span>📝</span> Descripción
+          </p>
+          <textarea
+            v-model="descriptionText"
+            class="w-full bg-gray-900/40 border border-gray-700 rounded-lg p-2 text-sm text-gray-300 focus:outline-none focus:border-primary-500 resize-none"
+            rows="3"
+            placeholder="Escribe una descripción para este nombre..."
+          ></textarea>
+          <div class="flex gap-2 justify-end">
+            <button
+              @click="cancelEditingDescription"
+              class="px-3 py-1 text-xs text-gray-400 hover:text-gray-300 transition-colors rounded hover:bg-gray-700/50"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="saveDescription"
+              :disabled="savingDescription"
+              class="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors disabled:opacity-50"
+            >
+              {{ savingDescription ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -53,13 +107,13 @@
           <div v-if="groupStore.currentGroup.parents.length" class="p-3 bg-gray-800/20 rounded-xl border border-gray-700/30 flex flex-wrap gap-2">
             <span class="text-[10px] text-gray-500 w-full mb-1">PADRES:</span>
             <span v-for="(p, i) in groupStore.currentGroup.parents" :key="i" class="text-xs text-gray-300 bg-gray-700/50 px-2 py-1 rounded-lg">
-              {{ p.firstName }} {{ p.lastName1 }}
+              {{ p.firstName }} {{ p.lastName1 }}{{ p.lastName2 ? ' ' + p.lastName2 : '' }}
             </span>
           </div>
           <div v-if="groupStore.currentGroup.siblings.length" class="p-3 bg-gray-800/20 rounded-xl border border-gray-700/30 flex flex-wrap gap-2">
             <span class="text-[10px] text-gray-500 w-full mb-1">HERMANOS:</span>
             <span v-for="(s, i) in groupStore.currentGroup.siblings" :key="i" class="text-xs text-gray-300 bg-gray-700/50 px-2 py-1 rounded-lg">
-              {{ s.firstName }} {{ s.lastName1 }}
+              {{ s.firstName }} {{ s.lastName1 }}{{ s.lastName2 ? ' ' + s.lastName2 : '' }}
             </span>
           </div>
         </div>
@@ -97,17 +151,6 @@
         <p class="text-[10px] text-gray-500 mt-4 text-center italic">Basado en los datos de tu grupo familiar</p>
       </div>
     </div>
-
-    <!-- Description -->
-    <div v-if="name.description" class="bg-gray-800/20 p-4 rounded-xl border border-dashed border-gray-700/50">
-      <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-2">
-        <span>📝</span> Descripción
-      </p>
-      <p class="text-gray-300 text-sm italic leading-relaxed">
-        "{{ name.description }}"
-      </p>
-    </div>
-
 
     <!-- Expandable Sections -->
     <!-- Voter List (Expandable) -->
@@ -153,6 +196,7 @@ import { computed, ref, reactive } from 'vue'
 import { useGroupStore } from '@/stores/group'
 import { useNameStore } from '@/stores/name'
 import { useAuthStore } from '@/stores/auth'
+import api from '@/services/api'
 
 const nameStore = useNameStore()
 const authStore = useAuthStore()
@@ -172,8 +216,51 @@ const props = defineProps<{
   loadingRatings?: boolean
 }>()
 
+const emit = defineEmits<{
+  'description-updated': []
+}>()
+
 const refreshScenarios = () => {
   refreshKey.value++
+}
+
+// Description editing
+const editingDescription = ref(false)
+const descriptionText = ref('')
+const savingDescription = ref(false)
+
+const isProposer = computed(() => {
+  return authStore.user?.id === props.name.proposedBy
+})
+
+const startEditingDescription = () => {
+  descriptionText.value = props.name.description || ''
+  editingDescription.value = true
+}
+
+const cancelEditingDescription = () => {
+  editingDescription.value = false
+  descriptionText.value = ''
+}
+
+const saveDescription = async () => {
+  if (savingDescription.value) return
+
+  try {
+    savingDescription.value = true
+    await api.patch(`/names/${props.name.id}/description`, {
+      description: descriptionText.value
+    })
+
+    // Update the local name object
+    props.name.description = descriptionText.value
+    editingDescription.value = false
+    emit('description-updated')
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al actualizar la descripción')
+  } finally {
+    savingDescription.value = false
+  }
 }
 
 const scenarios = computed(() => {

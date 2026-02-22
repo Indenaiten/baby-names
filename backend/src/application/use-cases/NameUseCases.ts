@@ -162,7 +162,7 @@ export class SetWinner {
       throw new Error('Only involved members can set the winning name');
     }
 
-    // Unset other winners in the same group? 
+    // Unset other winners in the same group?
     // Usually there's only one winner. Let's unset others if this one is being set.
     if (isWinner) {
       const allNames = await this.babyNameRepository.findByGroupId(name.groupId);
@@ -175,6 +175,34 @@ export class SetWinner {
 
     const updated = await this.babyNameRepository.update(nameId, { isWinner });
     if (!updated) throw new Error('Failed to update winner status');
+    return updated;
+  }
+}
+
+export class UpdateNameDescription {
+  constructor(
+    private babyNameRepository: IBabyNameRepository,
+    private groupRepository: IGroupRepository
+  ) { }
+
+  async execute(nameId: string, userId: string, description: string, userRole?: string): Promise<BabyName> {
+    const name = await this.babyNameRepository.findById(nameId);
+    if (!name) throw new Error('Name not found');
+
+    const group = await this.groupRepository.findById(name.groupId);
+    if (!group) throw new Error('Group not found');
+
+    // Only the proposer can update the description
+    if (userRole !== 'root' && name.proposedBy !== userId) {
+      throw new Error('Only the proposer can update the description');
+    }
+
+    // Allow empty description (to remove it)
+    const trimmedDescription = description.trim();
+    const updated = await this.babyNameRepository.update(nameId, {
+      description: trimmedDescription || undefined
+    });
+    if (!updated) throw new Error('Failed to update description');
     return updated;
   }
 }
