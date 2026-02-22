@@ -26,6 +26,7 @@ export class MongoBabyNameRepository implements IBabyNameRepository {
       groupId: doc.groupId.toString(),
       averageScore: doc.averageScore,
       totalRatings: doc.totalRatings,
+      description: doc.description,
       createdAt: doc.createdAt,
     });
   }
@@ -66,6 +67,7 @@ export class MongoBabyNameRepository implements IBabyNameRepository {
       gender: babyName.gender,
       proposedBy: babyName.proposedBy,
       groupId: babyName.groupId,
+      description: babyName.description,
     });
     return this.toDomain(doc);
   }

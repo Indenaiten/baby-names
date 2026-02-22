@@ -33,6 +33,7 @@ router.post('/groups/:gid/names', authMiddleware, async (req: AuthenticatedReque
       gender: req.body.gender as Gender,
       groupId: req.params.gid,
       proposedBy: req.userId!,
+      description: req.body.description,
     });
     res.status(201).json(name.toJSON());
   } catch (error: any) {

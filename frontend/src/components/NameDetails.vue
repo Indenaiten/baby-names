@@ -11,6 +11,16 @@
       </div>
     </div>
 
+    <!-- Description -->
+    <div v-if="name.description" class="bg-gray-800/20 p-4 rounded-xl border border-dashed border-gray-700/50">
+      <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-2 flex items-center gap-2">
+        <span>📝</span> Descripción
+      </p>
+      <p class="text-gray-300 text-sm italic leading-relaxed">
+        "{{ name.description }}"
+      </p>
+    </div>
+
     <!-- Ratings Summary -->
     <div class="grid grid-cols-2 gap-4">
       <div class="bg-gray-800/30 p-4 rounded-2xl text-center border border-gray-700/50">

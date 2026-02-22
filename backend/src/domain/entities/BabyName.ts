@@ -13,6 +13,7 @@ export interface BabyNameProps {
   groupId: string;
   averageScore?: number;
   totalRatings?: number;
+  description?: string;
   createdAt?: Date;
 }
 
@@ -25,6 +26,7 @@ export class BabyName {
   public readonly groupId: string;
   public averageScore: number;
   public totalRatings: number;
+  public readonly description?: string;
   public readonly createdAt: Date;
 
   private constructor(props: BabyNameProps) {
@@ -36,6 +38,7 @@ export class BabyName {
     this.groupId = props.groupId;
     this.averageScore = props.averageScore || 0;
     this.totalRatings = props.totalRatings || 0;
+    this.description = props.description;
     this.createdAt = props.createdAt || new Date();
   }
 
@@ -70,6 +73,7 @@ export class BabyName {
       groupId: this.groupId,
       averageScore: this.averageScore,
       totalRatings: this.totalRatings,
+      description: this.description,
       createdAt: this.createdAt,
     };
   }
