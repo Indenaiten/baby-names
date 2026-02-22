@@ -12,6 +12,7 @@ export interface LoginResult {
     id: string;
     username: string;
     role: string;
+    mustChangePassword: boolean;
   };
 }
 
@@ -40,6 +41,7 @@ export class LoginUser {
         id: user.id,
         username: user.username,
         role: user.role,
+        mustChangePassword: user.mustChangePassword,
       },
     };
   }

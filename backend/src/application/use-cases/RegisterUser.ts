@@ -39,6 +39,7 @@ export class RegisterUser {
       lastName: dto.lastName || '',
       passwordHash,
       role: dto.role,
+      mustChangePassword: true,
     });
 
     return this.userRepository.create(user);

@@ -32,6 +32,23 @@
       </div>
     </div>
 
+    <!-- Reset password modal -->
+    <div v-if="resetUser" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="resetUser = null">
+      <div class="card w-full max-w-sm animate-scale-in">
+        <h2 class="text-xl font-semibold mb-2">Reset password</h2>
+        <p class="text-sm text-gray-400 mb-4">Resetear contraseña de <span class="text-white">@{{ resetUser.username }}</span></p>
+        <form @submit.prevent="handleReset" class="space-y-4">
+          <input v-model="resetPassword" class="input-field" placeholder="Nueva contraseña temporal" type="password" required autofocus />
+          <div class="flex gap-3">
+            <button type="button" @click="resetUser = null" class="btn-secondary flex-1">Cancelar</button>
+            <button type="submit" class="btn-primary flex-1" :disabled="resetting">
+              {{ resetting ? 'Reseteando...' : 'Resetear' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Loading -->
     <div v-if="userStore.loading" class="flex justify-center py-20">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
@@ -62,13 +79,20 @@
               </td>
               <td class="px-6 py-4 text-gray-500 text-sm">{{ new Date(user.createdAt).toLocaleDateString('es') }}</td>
               <td class="px-6 py-4 text-right">
-                <button
-                  v-if="user.role !== 'root' && canDelete(user)"
-                  @click="handleDelete(user)"
-                  class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
-                >
-                  Eliminar
-                </button>
+                <div v-if="user.role !== 'root' && canDelete(user)" class="flex items-center justify-end gap-3">
+                  <button
+                    @click="openReset(user)"
+                    class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors"
+                  >
+                    Reset Pass
+                  </button>
+                  <button
+                    @click="handleDelete(user)"
+                    class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                </div>
                 <span v-else class="text-gray-600 text-sm">—</span>
               </td>
             </tr>
@@ -96,6 +120,11 @@ const form = reactive({
   password: '',
   role: 'user',
 })
+
+// Reset pass state
+const resetUser = ref<any>(null)
+const resetPassword = ref('')
+const resetting = ref(false)
 
 onMounted(() => {
   userStore.fetchUsers()
@@ -130,6 +159,25 @@ async function handleDelete(user: any) {
     } catch (e: any) {
       alert(e.response?.data?.error || 'Error al eliminar')
     }
+  }
+}
+
+function openReset(user: any) {
+  resetUser.value = user
+  resetPassword.value = ''
+}
+
+async function handleReset() {
+  if (!resetUser.value || !resetPassword.value) return
+  resetting.value = true
+  try {
+    await userStore.resetPassword(resetUser.value.id, resetPassword.value)
+    alert('Contraseña reseteada correctamente. El usuario tendrá que cambiarla en su próximo login.')
+    resetUser.value = null
+  } catch (e: any) {
+    alert(e.response?.data?.error || 'Error al resetear')
+  } finally {
+    resetting.value = false
   }
 }
 </script>

@@ -11,6 +11,7 @@ export interface UserProps {
   lastName?: string;
   passwordHash: string;
   role: UserRole;
+  mustChangePassword?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -22,6 +23,7 @@ export class User {
   public readonly lastName: string;
   public readonly passwordHash: string;
   public readonly role: UserRole;
+  public readonly mustChangePassword: boolean;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
 
@@ -32,6 +34,7 @@ export class User {
     this.lastName = props.lastName || '';
     this.passwordHash = props.passwordHash;
     this.role = props.role;
+    this.mustChangePassword = props.mustChangePassword ?? false;
     this.createdAt = props.createdAt || new Date();
     this.updatedAt = props.updatedAt || new Date();
   }
@@ -64,6 +67,7 @@ export class User {
       firstName: this.firstName,
       lastName: this.lastName,
       role: this.role,
+      mustChangePassword: this.mustChangePassword,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

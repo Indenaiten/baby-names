@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { LoginUser } from '../../application/use-cases/LoginUser';
 import { RegisterUser } from '../../application/use-cases/RegisterUser';
 import { GetAllUsers, DeleteUser, GetUserProfile } from '../../application/use-cases/UserUseCases';
+import { ChangePassword, ResetPassword } from '../../application/use-cases/PasswordUseCases';
 import { AuthenticatedRequest, authMiddleware, adminMiddleware } from '../middleware/auth';
 import { MongoUserRepository } from '../../infrastructure/repositories/MongoUserRepository';
 import { UserRole } from '../../domain/entities/User';
@@ -97,6 +98,36 @@ router.delete('/users/:id', authMiddleware, adminMiddleware, async (req: Authent
     const deleteUser = new DeleteUser(userRepository);
     await deleteUser.execute(req.params.id, req.userRole as UserRole);
     res.json({ message: 'User deleted' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/users/:id/reset-password
+router.post('/users/:id/reset-password', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const resetPassword = new ResetPassword(userRepository);
+    await resetPassword.execute(
+      req.params.id,
+      req.body.newPassword,
+      req.userRole as UserRole
+    );
+    res.json({ message: 'Password reset successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/users/me/change-password
+router.post('/users/me/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const changePassword = new ChangePassword(userRepository);
+    await changePassword.execute(
+      req.userId!,
+      req.body.currentPassword,
+      req.body.newPassword
+    );
+    res.json({ message: 'Password changed successfully' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

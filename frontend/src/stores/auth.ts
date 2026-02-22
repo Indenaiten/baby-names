@@ -6,6 +6,7 @@ interface User {
   id: string
   username: string
   role: string
+  mustChangePassword: boolean
 }
 
 export const useAuthStore = defineStore('auth', () => {

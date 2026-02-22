@@ -6,6 +6,7 @@ export interface IUserDocument extends Document {
   lastName: string;
   passwordHash: string;
   role: string;
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUserDocument>(
     lastName: { type: String, default: '', trim: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['root', 'admin', 'user'], default: 'user' },
+    mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -11,6 +11,7 @@ export class MongoUserRepository implements IUserRepository {
       lastName: doc.lastName || '',
       passwordHash: doc.passwordHash,
       role: doc.role as UserRole,
+      mustChangePassword: doc.mustChangePassword,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     });
@@ -59,6 +60,7 @@ export class MongoUserRepository implements IUserRepository {
       lastName: user.lastName,
       passwordHash: user.passwordHash,
       role: user.role,
+      mustChangePassword: user.mustChangePassword,
     });
     return this.toDomain(doc);
   }

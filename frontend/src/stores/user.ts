@@ -34,5 +34,9 @@ export const useUserStore = defineStore('user', () => {
     users.value = users.value.filter((u) => u.id !== userId)
   }
 
-  return { users, loading, fetchUsers, createUser, deleteUser }
+  async function resetPassword(userId: string, newPassword: string) {
+    await api.post(`/users/${userId}/reset-password`, { newPassword })
+  }
+
+  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword }
 })
