@@ -67,20 +67,42 @@ export class DeleteName {
     private groupRepository: IGroupRepository
   ) {}
 
-  async execute(nameId: string, userId: string): Promise<void> {
+  async execute(nameId: string, userId: string, userRole?: string): Promise<void> {
     const name = await this.babyNameRepository.findById(nameId);
     if (!name) throw new Error('Name not found');
 
     const group = await this.groupRepository.findById(name.groupId);
     if (!group) throw new Error('Group not found');
 
+    const isRoot = userRole === 'root';
     const isGroupAdmin = group.isGroupAdmin(userId);
     const isProposer = name.proposedBy === userId;
 
-    if (!isGroupAdmin && !isProposer) {
-      throw new Error('Only group admins or the proposer can delete names');
+    if (!isRoot && !isGroupAdmin && !isProposer) {
+      throw new Error('Only group admins, the proposer, or root users can delete names');
     }
 
     await this.babyNameRepository.delete(nameId);
+  }
+}
+
+export class ExportNames {
+  constructor(
+    private babyNameRepository: IBabyNameRepository,
+    private groupRepository: IGroupRepository
+  ) {}
+
+  async execute(groupId: string, userId: string, userRole?: string): Promise<BabyName[]> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+
+    const isRoot = userRole === 'root';
+    const isOwner = group.ownerId === userId;
+
+    if (!isRoot && !isOwner) {
+      throw new Error('Only the group owner or root user can export names');
+    }
+
+    return this.babyNameRepository.findByGroupId(groupId);
   }
 }

@@ -5,8 +5,9 @@ import {
   GetNamesByUser,
   GetUnratedNames,
   DeleteName,
+  ExportNames,
 } from '../../application/use-cases/NameUseCases';
-import { RateName, GetRatingsByName, GetUserRatingsInGroup } from '../../application/use-cases/RatingUseCases';
+import { RateName, GetRatingsByName, GetUserRatingsInGroup, DeleteRating } from '../../application/use-cases/RatingUseCases';
 import { AddComment, GetCommentsByName } from '../../application/use-cases/CommentUseCases';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth';
 import { MongoBabyNameRepository } from '../../infrastructure/repositories/MongoBabyNameRepository';
@@ -24,6 +25,8 @@ const commentRepository = new MongoCommentRepository();
 // POST /api/groups/:gid/names
 router.post('/groups/:gid/names', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    const group = await groupRepository.findById(req.params.gid);
+    if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden proponer nombres.' });
     const proposeName = new ProposeName(babyNameRepository, groupRepository);
     const name = await proposeName.execute({
       name: req.body.name,
@@ -74,22 +77,39 @@ router.get('/groups/:gid/names/unrated', authMiddleware, async (req: Authenticat
 router.delete('/names/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const deleteName = new DeleteName(babyNameRepository, groupRepository);
-    await deleteName.execute(req.params.id, req.userId!);
+    await deleteName.execute(req.params.id, req.userId!, req.userRole);
     res.json({ message: 'Name deleted' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 });
 
+// GET /api/groups/:gid/export
+router.get('/groups/:gid/export', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const exportNames = new ExportNames(babyNameRepository, groupRepository);
+    const names = await exportNames.execute(req.params.gid, req.userId!, req.userRole);
+    res.json(names.map((n: any) => n.toJSON()));
+  } catch (error: any) {
+    const status = error.message.includes('Only') ? 403 : 400;
+    res.status(status).json({ error: error.message });
+  }
+});
+
 // POST /api/names/:id/rate
 router.post('/names/:id/rate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Check if group is closed
+    const babyName = await babyNameRepository.findById(req.params.id);
+    if (babyName) {
+      const group = await groupRepository.findById(babyName.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden emitir votos.' });
+    }
     const rateName = new RateName(ratingRepository, babyNameRepository);
     const rating = await rateName.execute({
       nameId: req.params.id,
       userId: req.userId!,
       score: req.body.score,
-      comment: req.body.comment,
     });
     res.status(201).json(rating.toJSON());
   } catch (error: any) {
@@ -119,6 +139,23 @@ router.get('/groups/:gid/ratings/mine', authMiddleware, async (req: Authenticate
   }
 });
 
+// DELETE /api/names/:id/rate
+router.delete('/names/:id/rate', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // Check if group is closed
+    const babyName = await babyNameRepository.findById(req.params.id);
+    if (babyName) {
+      const group = await groupRepository.findById(babyName.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden eliminar votos.' });
+    }
+    const deleteRating = new DeleteRating(ratingRepository, babyNameRepository);
+    await deleteRating.execute(req.userId!, req.params.id);
+    res.json({ message: 'Rating deleted' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // GET /api/names/:id/comments
 router.get('/names/:id/comments', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -133,6 +170,12 @@ router.get('/names/:id/comments', authMiddleware, async (req: AuthenticatedReque
 // POST /api/names/:id/comments
 router.post('/names/:id/comments', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Check if group is closed
+    const nameForComment = await babyNameRepository.findById(req.params.id);
+    if (nameForComment) {
+      const group = await groupRepository.findById(nameForComment.groupId);
+      if (group?.closed) return res.status(403).json({ error: 'Este grupo está cerrado. No se pueden añadir comentarios.' });
+    }
     const addComment = new AddComment(commentRepository);
     const comment = await addComment.execute({
       nameId: req.params.id,

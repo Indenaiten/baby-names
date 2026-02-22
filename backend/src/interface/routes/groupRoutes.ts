@@ -7,6 +7,11 @@ import {
   RequestJoinGroup,
   AcceptMember,
   RemoveGroupMember,
+  RenameGroup,
+  CloseGroup,
+  DeleteGroup,
+  RespondToInvitation,
+  LeaveGroup,
 } from '../../application/use-cases/GroupUseCases';
 import { AuthenticatedRequest, authMiddleware } from '../middleware/auth';
 import { MongoGroupRepository } from '../../infrastructure/repositories/MongoGroupRepository';
@@ -50,6 +55,40 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
+// PUT /api/groups/:id/rename
+router.put('/:id/rename', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const rename = new RenameGroup(groupRepository);
+    const group = await rename.execute(req.params.id, req.body.name, req.userId!);
+    res.json(group.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PUT /api/groups/:id/close
+router.put('/:id/close', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const close = new CloseGroup(groupRepository);
+    const closed = req.body.closed !== undefined ? req.body.closed : true;
+    const group = await close.execute(req.params.id, closed, req.userId!);
+    res.json(group.toJSON());
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// DELETE /api/groups/:id
+router.delete('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const del = new DeleteGroup(groupRepository);
+    await del.execute(req.params.id, req.userId!);
+    res.json({ message: 'Group deleted' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // POST /api/groups/:id/invite
 router.post('/:id/invite', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -87,6 +126,32 @@ router.put('/:id/members/:uid', authMiddleware, async (req: AuthenticatedRequest
     } else {
       res.status(400).json({ error: 'Invalid action. Use "accept" or "remove".' });
     }
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/groups/:id/respond — user accepts or rejects their own invitation
+router.post('/:id/respond', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const action = req.body.action;
+    if (action !== 'accept' && action !== 'reject') {
+      return res.status(400).json({ error: 'Invalid action. Use "accept" or "reject".' });
+    }
+    const respond = new RespondToInvitation(groupRepository);
+    const group = await respond.execute(req.params.id, req.userId!, action);
+    res.json(group ? group.toJSON() : { message: 'Invitation rejected' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/groups/:id/leave — user leaves a group
+router.post('/:id/leave', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const leave = new LeaveGroup(groupRepository);
+    await leave.execute(req.params.id, req.userId!);
+    res.json({ message: 'Left group successfully' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

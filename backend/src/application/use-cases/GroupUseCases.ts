@@ -130,3 +130,81 @@ export class RemoveGroupMember {
     return updated;
   }
 }
+
+export class RenameGroup {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, newName: string, userId: string): Promise<Group> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    if (!group.isOwner(userId)) throw new Error('Only the group owner can rename the group');
+    if (!newName || newName.trim().length < 2) throw new Error('Group name must be at least 2 characters');
+    const updated = await this.groupRepository.update(groupId, { name: newName.trim() } as any);
+    if (!updated) throw new Error('Failed to rename group');
+    return updated;
+  }
+}
+
+export class CloseGroup {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, closed: boolean, userId: string): Promise<Group> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    if (!group.isOwner(userId)) throw new Error('Only the group owner can close/reopen the group');
+    const updated = await this.groupRepository.update(groupId, { closed } as any);
+    if (!updated) throw new Error('Failed to update group');
+    return updated;
+  }
+}
+
+export class DeleteGroup {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, userId: string): Promise<void> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    if (!group.isOwner(userId)) throw new Error('Only the group owner can delete the group');
+    const deleted = await this.groupRepository.delete(groupId);
+    if (!deleted) throw new Error('Failed to delete group');
+  }
+}
+
+export class RespondToInvitation {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, userId: string, action: 'accept' | 'reject'): Promise<Group | null> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    const member = group.members.find((m) => m.userId === userId);
+    if (!member || member.status !== MemberStatus.INVITED) {
+      throw new Error('No pending invitation found');
+    }
+    if (action === 'accept') {
+      const updated = await this.groupRepository.updateMember(groupId, userId, {
+        status: MemberStatus.ACTIVE,
+      });
+      if (!updated) throw new Error('Failed to accept invitation');
+      return updated;
+    } else {
+      const updated = await this.groupRepository.removeMember(groupId, userId);
+      if (!updated) throw new Error('Failed to reject invitation');
+      return updated;
+    }
+  }
+}
+
+export class LeaveGroup {
+  constructor(private groupRepository: IGroupRepository) {}
+
+  async execute(groupId: string, userId: string): Promise<void> {
+    const group = await this.groupRepository.findById(groupId);
+    if (!group) throw new Error('Group not found');
+    if (group.isOwner(userId)) throw new Error('The group owner cannot leave. Transfer ownership or delete the group.');
+    const member = group.members.find((m) => m.userId === userId);
+    if (!member) throw new Error('You are not a member of this group');
+    const updated = await this.groupRepository.removeMember(groupId, userId);
+    if (!updated) throw new Error('Failed to leave group');
+  }
+}
+

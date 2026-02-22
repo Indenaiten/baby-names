@@ -14,6 +14,7 @@ export class MongoGroupRepository implements IGroupRepository {
         status: m.status as MemberStatus,
         joinedAt: m.joinedAt,
       })),
+      closed: doc.closed || false,
       createdAt: doc.createdAt,
     });
   }

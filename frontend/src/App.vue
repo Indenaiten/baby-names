@@ -24,13 +24,13 @@
           <router-link :to="`/groups/${groupStore.currentGroup.id}`" class="nav-link" active-class="active">
             <span>🏆</span> Ranking
           </router-link>
-          <router-link :to="`/groups/${groupStore.currentGroup.id}/add`" class="nav-link" active-class="active">
+          <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/add`" class="nav-link" active-class="active">
             <span>✨</span> Proponer nombre
           </router-link>
           <router-link :to="`/groups/${groupStore.currentGroup.id}/my-names`" class="nav-link" active-class="active">
             <span>📝</span> Mis nombres
           </router-link>
-          <router-link :to="`/groups/${groupStore.currentGroup.id}/discover`" class="nav-link" active-class="active">
+          <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="nav-link" active-class="active">
             <span>🔮</span> Descubrir
           </router-link>
         </nav>
@@ -63,7 +63,7 @@
           <span class="text-lg">🏆</span>
           <span>Ranking</span>
         </router-link>
-        <router-link :to="`/groups/${groupStore.currentGroup.id}/add`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
+        <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/add`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">✨</span>
           <span>Añadir</span>
         </router-link>
@@ -71,7 +71,7 @@
           <span class="text-lg">📝</span>
           <span>Mis nombres</span>
         </router-link>
-        <router-link :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
+        <router-link v-if="!groupStore.currentGroup.closed" :to="`/groups/${groupStore.currentGroup.id}/discover`" class="flex flex-col items-center py-2 px-3 text-gray-400 hover:text-white text-xs" active-class="!text-primary-400">
           <span class="text-lg">🔮</span>
           <span>Descubrir</span>
         </router-link>
@@ -88,6 +88,36 @@
         </div>
       </main>
     </div>
+
+    <!-- Mandatory Change Password Modal -->
+    <div v-if="authStore.user?.mustChangePassword" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+      <div class="card w-full max-w-md animate-scale-in">
+        <div class="text-center mb-6">
+          <span class="text-4xl mb-3 block">🔐</span>
+          <h2 class="text-2xl font-bold text-white">Cambio de contraseña</h2>
+          <p class="text-gray-400 mt-1">Por seguridad, debes cambiar tu contraseña para continuar</p>
+        </div>
+
+        <div v-if="changeError" class="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center">
+          {{ changeError }}
+        </div>
+
+        <form @submit.prevent="handleChangePassword" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1.5">Nueva contraseña</label>
+            <input v-model="changeForm.newPassword" type="password" class="input-field" placeholder="Mínimo 8 caracteres" required minlength="8" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1.5">Confirmar nueva contraseña</label>
+            <input v-model="changeForm.confirmPassword" type="password" class="input-field" placeholder="••••••••" required />
+          </div>
+
+          <button type="submit" class="btn-primary w-full mt-2" :disabled="changing">
+            {{ changing ? 'Cambiando...' : 'Cambiar y continuar' }}
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -99,6 +129,42 @@ import { useRouter } from 'vue-router'
 const authStore = useAuthStore()
 const groupStore = useGroupStore()
 const router = useRouter()
+
+// Change password state
+import { reactive, ref } from 'vue'
+import api from '@/services/api'
+
+const changing = ref(false)
+const changeError = ref('')
+const changeForm = reactive({
+  newPassword: '',
+  confirmPassword: ''
+})
+
+async function handleChangePassword() {
+  if (changeForm.newPassword !== changeForm.confirmPassword) {
+    changeError.value = 'Las contraseñas no coinciden'
+    return
+  }
+
+  changing.value = true
+  changeError.value = ''
+  try {
+    await api.post('/users/me/change-password', {
+      newPassword: changeForm.newPassword
+    })
+    
+    // Update local user state
+    if (authStore.user) {
+      authStore.user.mustChangePassword = false
+      localStorage.setItem('user', JSON.stringify(authStore.user))
+    }
+  } catch (e: any) {
+    changeError.value = e.response?.data?.error || 'Error al cambiar contraseña'
+  } finally {
+    changing.value = false
+  }
+}
 
 function handleLogout() {
   authStore.logout()

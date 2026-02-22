@@ -7,9 +7,11 @@ export enum UserRole {
 export interface UserProps {
   id?: string;
   username: string;
-  email: string;
+  firstName?: string;
+  lastName?: string;
   passwordHash: string;
   role: UserRole;
+  mustChangePassword?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,18 +19,22 @@ export interface UserProps {
 export class User {
   public readonly id: string;
   public readonly username: string;
-  public readonly email: string;
+  public readonly firstName: string;
+  public readonly lastName: string;
   public readonly passwordHash: string;
   public readonly role: UserRole;
+  public readonly mustChangePassword: boolean;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
 
   private constructor(props: UserProps) {
     this.id = props.id || '';
     this.username = props.username;
-    this.email = props.email;
+    this.firstName = props.firstName || '';
+    this.lastName = props.lastName || '';
     this.passwordHash = props.passwordHash;
     this.role = props.role;
+    this.mustChangePassword = props.mustChangePassword ?? false;
     this.createdAt = props.createdAt || new Date();
     this.updatedAt = props.updatedAt || new Date();
   }
@@ -36,9 +42,6 @@ export class User {
   public static create(props: UserProps): User {
     if (!props.username || props.username.trim().length < 3) {
       throw new Error('Username must be at least 3 characters long');
-    }
-    if (!props.email || !props.email.includes('@')) {
-      throw new Error('Invalid email address');
     }
     if (!props.passwordHash) {
       throw new Error('Password hash is required');
@@ -61,8 +64,10 @@ export class User {
     return {
       id: this.id,
       username: this.username,
-      email: this.email,
+      firstName: this.firstName,
+      lastName: this.lastName,
       role: this.role,
+      mustChangePassword: this.mustChangePassword,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
     };

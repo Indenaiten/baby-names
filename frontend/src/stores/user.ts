@@ -5,7 +5,6 @@ import api from '@/services/api'
 interface User {
   id: string
   username: string
-  email: string
   role: string
   createdAt: string
 }
@@ -24,8 +23,8 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function createUser(username: string, email: string, password: string, role: string) {
-    const { data } = await api.post('/users', { username, email, password, role })
+  async function createUser(username: string, password: string, role: string) {
+    const { data } = await api.post('/users', { username, password, role })
     users.value.unshift(data)
     return data
   }
@@ -35,5 +34,15 @@ export const useUserStore = defineStore('user', () => {
     users.value = users.value.filter((u) => u.id !== userId)
   }
 
-  return { users, loading, fetchUsers, createUser, deleteUser }
+  async function resetPassword(userId: string, newPassword: string) {
+    await api.post(`/users/${userId}/reset-password`, { newPassword })
+  }
+
+  async function updateUserRole(userId: string, role: string) {
+    await api.patch(`/users/${userId}/role`, { role })
+    const user = users.value.find((u) => u.id === userId)
+    if (user) user.role = role
+  }
+
+  return { users, loading, fetchUsers, createUser, deleteUser, resetPassword, updateUserRole }
 })

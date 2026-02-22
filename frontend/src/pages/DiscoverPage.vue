@@ -3,8 +3,16 @@
     <h1 class="text-3xl font-display font-bold text-white mb-2">🔮 Descubrir</h1>
     <p class="text-gray-400 mb-8">Vota nombres que aún no has valorado, uno a uno</p>
 
+    <!-- Group closed -->
+    <div v-if="groupStore.currentGroup?.closed" class="text-center py-20 animate-scale-in">
+      <p class="text-7xl mb-4">🔒</p>
+      <h2 class="text-2xl font-display font-bold text-white mb-2">Grupo cerrado</h2>
+      <p class="text-gray-400 mb-6">Este grupo está cerrado y ya no se pueden realizar votaciones.</p>
+      <router-link :to="`/groups/${gid}`" class="btn-primary">Ver ranking final</router-link>
+    </div>
+
     <!-- Loading -->
-    <div v-if="loading" class="flex justify-center py-20">
+    <div v-else-if="loading" class="flex justify-center py-20">
       <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
     </div>
 
@@ -19,7 +27,7 @@
     <!-- Name card -->
     <div v-else class="max-w-md mx-auto">
       <div class="text-center text-sm text-gray-500 mb-4">
-        {{ currentIndex + 1 }} de {{ totalUnrated }}
+        {{ votedCount + currentIndex + 1 }} de {{ totalUnrated }}
       </div>
 
       <div
@@ -36,10 +44,15 @@
             {{ genderLabel(currentName.gender) }}
           </span>
           <h2 class="text-4xl font-display font-bold text-white mb-2">{{ currentName.name }}</h2>
-          <p class="text-gray-500 text-sm">
-            {{ currentName.totalRatings }} votos ·
-            {{ currentName.averageScore > 0 ? `${currentName.averageScore.toFixed(1)} ⭐` : 'Sin votos' }}
-          </p>
+          <div class="flex flex-col items-center gap-1">
+            <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-white/5 px-2 py-0.5 rounded backdrop-blur">
+              👤 Propuesto por {{ currentName.proposerName || '...' }}
+            </p>
+            <p class="text-gray-500 text-sm">
+              {{ currentName.totalRatings }} votos ·
+              {{ currentName.averageScore > 0 ? `${currentName.averageScore.toFixed(1)} ⭐` : 'Sin votos' }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -63,13 +76,6 @@
         </div>
       </div>
 
-      <!-- Comment -->
-      <textarea
-        v-model="comment"
-        class="input-field mt-4"
-        rows="2"
-        placeholder="Comentario opcional..."
-      />
 
       <!-- Actions -->
       <div class="flex gap-3 mt-4">
@@ -86,17 +92,19 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
+import { useGroupStore } from '@/stores/group'
 
 const route = useRoute()
 const nameStore = useNameStore()
+const groupStore = useGroupStore()
 const gid = computed(() => route.params.gid as string)
 
 const loading = ref(true)
 const currentIndex = ref(0)
 const score = ref(0)
-const comment = ref('')
 const submitting = ref(false)
 const totalUnrated = ref(0)
+const votedCount = ref(0)
 
 const currentName = computed(() => {
   if (currentIndex.value < nameStore.unratedNames.length) {
@@ -106,8 +114,14 @@ const currentName = computed(() => {
 })
 
 onMounted(async () => {
-  await nameStore.fetchUnratedNames(gid.value)
-  totalUnrated.value = nameStore.unratedNames.length
+  if (!groupStore.currentGroup || groupStore.currentGroup.id !== gid.value) {
+    await groupStore.fetchGroup(gid.value)
+  }
+  
+  if (!groupStore.currentGroup?.closed) {
+    await nameStore.fetchUnratedNames(gid.value)
+    totalUnrated.value = nameStore.unratedNames.length
+  }
   loading.value = false
 })
 
@@ -115,8 +129,9 @@ async function submitVote() {
   if (!score.value || !currentName.value) return
   submitting.value = true
   try {
-    await nameStore.rateName(currentName.value.id, score.value, comment.value)
-    nextName()
+    await nameStore.rateName(currentName.value.id, score.value)
+    votedCount.value++
+    score.value = 0
   } finally {
     submitting.value = false
   }
@@ -125,13 +140,6 @@ async function submitVote() {
 function skip() {
   currentIndex.value++
   score.value = 0
-  comment.value = ''
-}
-
-function nextName() {
-  currentIndex.value++
-  score.value = 0
-  comment.value = ''
 }
 
 function genderBadgeClass(gender: string) {

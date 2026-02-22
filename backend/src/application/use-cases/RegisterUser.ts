@@ -4,7 +4,8 @@ import { AuthService } from '../../infrastructure/auth/AuthService';
 
 export interface RegisterUserDTO {
   username: string;
-  email: string;
+  firstName?: string;
+  lastName?: string;
   password: string;
   role: UserRole;
 }
@@ -24,10 +25,6 @@ export class RegisterUser {
       throw new Error('Users cannot create other users');
     }
 
-    const existingByEmail = await this.userRepository.findByEmail(dto.email);
-    if (existingByEmail) {
-      throw new Error('Email already in use');
-    }
 
     const existingByUsername = await this.userRepository.findByUsername(dto.username);
     if (existingByUsername) {
@@ -38,9 +35,11 @@ export class RegisterUser {
 
     const user = User.create({
       username: dto.username,
-      email: dto.email,
+      firstName: dto.firstName || '',
+      lastName: dto.lastName || '',
       passwordHash,
       role: dto.role,
+      mustChangePassword: true,
     });
 
     return this.userRepository.create(user);

@@ -17,12 +17,12 @@
 
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-400 mb-1.5">Usuario o email</label>
+            <label class="block text-sm text-gray-400 mb-1.5">Usuario</label>
             <input
               v-model="identifier"
               type="text"
               class="input-field"
-              placeholder="tu@email.com o username"
+              placeholder="Tu nombre de usuario"
               required
               autofocus
             />
@@ -58,6 +58,9 @@
 
       <p class="text-center text-xs text-gray-600 mt-6">
         ¿No tienes cuenta? Pide a un administrador que te cree una.
+      </p>
+      <p class="text-center text-xs text-gray-600 mt-6">
+        Ángel HS & Patricia FG
       </p>
     </div>
   </div>

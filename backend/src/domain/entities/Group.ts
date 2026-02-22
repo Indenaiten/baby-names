@@ -21,6 +21,7 @@ export interface GroupProps {
   name: string;
   ownerId: string;
   members?: GroupMember[];
+  closed?: boolean;
   createdAt?: Date;
 }
 
@@ -29,6 +30,7 @@ export class Group {
   public readonly name: string;
   public readonly ownerId: string;
   public readonly members: GroupMember[];
+  public readonly closed: boolean;
   public readonly createdAt: Date;
 
   private constructor(props: GroupProps) {
@@ -43,6 +45,7 @@ export class Group {
         joinedAt: new Date(),
       },
     ];
+    this.closed = props.closed || false;
     this.createdAt = props.createdAt || new Date();
   }
 
@@ -54,6 +57,10 @@ export class Group {
       throw new Error('Owner ID is required');
     }
     return new Group(props);
+  }
+
+  public isOwner(userId: string): boolean {
+    return this.ownerId === userId;
   }
 
   public isMember(userId: string): boolean {
@@ -83,6 +90,7 @@ export class Group {
       name: this.name,
       ownerId: this.ownerId,
       members: this.members,
+      closed: this.closed,
       createdAt: this.createdAt,
     };
   }

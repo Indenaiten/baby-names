@@ -2,9 +2,11 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUserDocument extends Document {
   username: string;
-  email: string;
+  firstName: string;
+  lastName: string;
   passwordHash: string;
   role: string;
+  mustChangePassword: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,14 +14,15 @@ export interface IUserDocument extends Document {
 const UserSchema = new Schema<IUserDocument>(
   {
     username: { type: String, required: true, unique: true, trim: true },
-    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    firstName: { type: String, default: '', trim: true },
+    lastName: { type: String, default: '', trim: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['root', 'admin', 'user'], default: 'user' },
+    mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ username: 1 });
 
 export const UserModel = mongoose.model<IUserDocument>('User', UserSchema);

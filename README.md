@@ -40,7 +40,6 @@ Al iniciar por primera vez se crea automáticamente un usuario **root** con las 
 |----------|------------------------|
 | Usuario  | `root`                 |
 | Password | `root1234`             |
-| Email    | `root@babynames.app`   |
 
 > ⚠️ **Cambia estas credenciales** en el fichero `.env` antes de desplegar en producción.
 

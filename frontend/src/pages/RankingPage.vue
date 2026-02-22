@@ -5,6 +5,14 @@
         <h1 class="text-3xl font-display font-bold text-white">🏆 Ranking</h1>
         <p class="text-gray-400 mt-1">Los nombres mejor valorados</p>
       </div>
+      <button
+        v-if="canExport"
+        @click="handleExport"
+        class="btn-secondary flex items-center gap-2 py-2.5 px-5 h-fit shadow-lg shadow-gray-900/10 border-gray-700/50"
+      >
+        <span class="text-lg">📥</span>
+        <span>Exportar JSON</span>
+      </button>
     </div>
 
     <!-- Gender filter tabs -->
@@ -56,7 +64,12 @@
               {{ genderLabel(name.gender) }}
             </span>
           </div>
-          <p class="text-sm text-gray-500">{{ name.totalRatings }} votos</p>
+          <div class="flex items-center gap-2 mt-0.5">
+            <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-gray-800 px-1.5 py-0.5 rounded">
+              👤 {{ name.proposerName || '...' }}
+            </p>
+            <p class="text-xs text-gray-500">{{ name.totalRatings }} votos</p>
+          </div>
         </div>
 
         <!-- Score -->
@@ -66,19 +79,49 @@
           </div>
         </div>
 
-        <!-- Rate button -->
+        <div v-if="hasRated(name.id)" class="flex items-center gap-1 shrink-0">
+          <button
+            @click="openRating(name)"
+            class="text-xs text-primary-400 hover:text-primary-300 font-medium underline"
+            v-if="!groupStore.currentGroup?.closed"
+          >
+            Cambiar
+          </button>
+          <span class="text-xs text-gray-600">·</span>
+          <button
+            @click="handleDeleteRating(name.id)"
+            class="text-xs text-red-500 hover:text-red-400 font-medium underline"
+            v-if="!groupStore.currentGroup?.closed"
+          >
+            Borrar
+          </button>
+          <span v-else class="text-xs text-green-400">✓ Votado</span>
+        </div>
         <button
           @click="openRating(name)"
           class="btn-secondary text-sm py-2 px-4 shrink-0"
-          v-if="!hasRated(name.id)"
+          v-else-if="!groupStore.currentGroup?.closed"
         >
           Votar
         </button>
-        <span v-else class="text-xs text-green-400 shrink-0">✓ Votado</span>
 
-        <!-- Comment toggle -->
-        <button @click="toggleComments(name.id)" class="text-gray-500 hover:text-gray-300 transition-colors shrink-0">
-          💬
+        <!-- Delete button (for proposer, group owner or root) -->
+        <button
+          v-if="canDelete(name)"
+          @click="handleDeleteName(name)"
+          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+          title="Eliminar nombre"
+        >
+          <span class="text-lg leading-none">🗑️</span>
+        </button>
+
+        <!-- Detail toggle -->
+        <button 
+          @click="toggleComments(name.id)" 
+          class="w-10 h-10 rounded-xl bg-gray-800/50 text-gray-400 hover:text-primary-400 hover:bg-primary-500/10 transition-all duration-300 flex items-center justify-center border border-gray-700/30 shrink-0"
+          title="Ver detalles y comentarios"
+        >
+          <span class="text-lg leading-none">👁️</span>
         </button>
       </div>
     </div>
@@ -103,12 +146,6 @@
           </button>
         </div>
 
-        <textarea
-          v-model="ratingComment"
-          class="input-field mb-4"
-          rows="3"
-          placeholder="Comentario opcional..."
-        />
 
         <div class="flex gap-3">
           <button @click="ratingModal = null" class="btn-secondary flex-1">Cancelar</button>
@@ -119,50 +156,44 @@
       </div>
     </div>
 
-    <!-- Comments section -->
+    <!-- Details/Comments section -->
     <div v-if="showCommentsFor" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center" @click.self="showCommentsFor = null">
-      <div class="card w-full sm:max-w-lg max-h-[80vh] flex flex-col animate-slide-up rounded-b-none sm:rounded-b-2xl">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-lg">Comentarios</h3>
-          <button @click="showCommentsFor = null" class="text-gray-400 hover:text-white">✕</button>
+      <div class="card w-full sm:max-w-lg max-h-[85vh] flex flex-col animate-slide-up rounded-b-none sm:rounded-b-2xl p-0 overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-800">
+          <h3 class="font-bold text-xl text-white">
+            {{ nameStore.names.find(n => n.id === showCommentsFor)?.name }}
+          </h3>
+          <button @click="showCommentsFor = null" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto space-y-3 mb-4">
-          <div v-if="nameStore.comments.length === 0" class="text-center py-8 text-gray-500">
-            No hay comentarios todavía
-          </div>
-          <div
-            v-for="c in rootComments"
-            :key="c.id"
-            class="space-y-2"
-          >
-            <div class="bg-gray-800/50 rounded-xl p-3">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-medium text-primary-300">{{ c.userId.slice(-6) }}</span>
-                <span class="text-xs text-gray-600">{{ new Date(c.createdAt).toLocaleDateString('es') }}</span>
-              </div>
-              <p class="text-sm text-gray-200">{{ c.text }}</p>
-              <button @click="replyTo = c.id" class="text-xs text-gray-500 hover:text-primary-400 mt-1">Responder</button>
-            </div>
-            <!-- Replies -->
-            <div v-for="r in getReplies(c.id)" :key="r.id" class="ml-6 bg-gray-800/30 rounded-xl p-3">
-              <div class="flex items-center gap-2 mb-1">
-                <span class="text-xs font-medium text-primary-300">{{ r.userId.slice(-6) }}</span>
-                <span class="text-xs text-gray-600">{{ new Date(r.createdAt).toLocaleDateString('es') }}</span>
-              </div>
-              <p class="text-sm text-gray-300">{{ r.text }}</p>
-            </div>
-          </div>
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto p-4 modal-scroll-area custom-scrollbar">
+          <NameDetails 
+            :name="nameStore.names.find(n => n.id === showCommentsFor)" 
+            :ratings="nameStore.ratings"
+            :comments="nameStore.comments"
+            :loadingRatings="loadingRatings"
+            :loadingComments="loadingComments"
+            @reply="handleReply"
+          />
         </div>
 
-        <form @submit.prevent="submitComment" class="flex gap-2">
-          <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
-          <button type="submit" class="btn-primary px-4">→</button>
-        </form>
-        <p v-if="replyTo" class="text-xs text-gray-500 mt-1">
-          Respondiendo a comentario
-          <button @click="replyTo = null" class="text-primary-400 ml-1">Cancelar</button>
-        </p>
+        <!-- Footer -->
+        <div v-if="!groupStore.currentGroup?.closed" class="p-4 bg-gray-900/50 border-t border-gray-800">
+          <form @submit.prevent="submitComment" class="flex gap-2">
+            <input v-model="commentText" class="input-field flex-1" :placeholder="replyTo ? 'Responder...' : 'Escribe un comentario...'" />
+            <button type="submit" class="btn-primary px-4 shadow-lg shadow-primary-500/20">→</button>
+          </form>
+          <p v-if="replyTo" class="text-[10px] text-gray-500 mt-2 flex items-center gap-2">
+            <span class="w-1 h-1 rounded-full bg-primary-500"></span>
+            Respondiendo a comentario
+            <button @click="replyTo = null" class="text-primary-400 font-bold hover:underline">Cancelar</button>
+          </p>
+        </div>
+        <div v-else class="p-4 bg-gray-950 text-center border-t border-gray-800">
+          <p class="text-xs text-gray-500 font-medium italic">💬 El grupo está cerrado, no se pueden añadir comentarios</p>
+        </div>
       </div>
     </div>
   </div>
@@ -173,10 +204,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useNameStore } from '@/stores/name'
 import { useGroupStore } from '@/stores/group'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const nameStore = useNameStore()
 const groupStore = useGroupStore()
+const authStore = useAuthStore()
 
 const gid = computed(() => route.params.gid as string)
 
@@ -190,7 +223,6 @@ const selectedGender = ref('')
 
 const ratingModal = ref<any>(null)
 const ratingScore = ref(0)
-const ratingComment = ref('')
 const submitting = ref(false)
 
 const showCommentsFor = ref<string | null>(null)
@@ -209,6 +241,18 @@ function getReplies(parentId: string) {
 function hasRated(nameId: string) {
   return ratedNameIds.value.has(nameId)
 }
+
+function canDelete(name: any) {
+  if (!authStore.user) return false
+  if (authStore.isRoot) return true
+  if (name.proposedBy === authStore.user.id) return true
+  return groupStore.currentGroup?.ownerId === authStore.user.id
+}
+
+const canExport = computed(() => {
+  if (!authStore.user || !groupStore.currentGroup) return false
+  return authStore.isRoot || groupStore.currentGroup.ownerId === authStore.user.id
+})
 
 onMounted(async () => {
   if (!groupStore.currentGroup || groupStore.currentGroup.id !== gid.value) {
@@ -236,27 +280,62 @@ function genderLabel(gender: string) {
 
 function openRating(name: any) {
   ratingModal.value = name
-  ratingScore.value = 0
-  ratingComment.value = ''
+  const existingRating = nameStore.myRatings.find(r => r.nameId === name.id)
+  ratingScore.value = existingRating ? existingRating.score : 0
 }
 
 async function submitRating() {
   if (!ratingScore.value || !ratingModal.value) return
   submitting.value = true
   try {
-    await nameStore.rateName(ratingModal.value.id, ratingScore.value, ratingComment.value)
+    await nameStore.rateName(ratingModal.value.id, ratingScore.value)
     ratedNameIds.value.add(ratingModal.value.id)
     ratingModal.value = null
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al enviar el voto')
   } finally {
     submitting.value = false
   }
 }
 
-function toggleComments(nameId: string) {
+async function handleDeleteRating(nameId: string) {
+  if (!confirm('¿Estás seguro de que quieres eliminar tu voto?')) return
+  try {
+    await nameStore.deleteRating(nameId)
+    ratedNameIds.value.delete(nameId)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al eliminar el voto')
+  }
+}
+
+// Comment toggle
+const loadingRatings = ref(false)
+const loadingComments = ref(false)
+
+async function toggleComments(nameId: string) {
   showCommentsFor.value = nameId
   replyTo.value = null
   commentText.value = ''
-  nameStore.fetchComments(nameId)
+  
+  loadingRatings.value = true
+  loadingComments.value = true
+  
+  try {
+    await Promise.all([
+      nameStore.fetchRatings(nameId),
+      nameStore.fetchComments(nameId)
+    ])
+  } finally {
+    loadingRatings.value = false
+    loadingComments.value = false
+  }
+}
+
+function handleReply(comment: any) {
+  replyTo.value = comment.id
+  // Scroll to bottom of modal to focus input
+  const modalBody = document.querySelector('.modal-scroll-area')
+  if (modalBody) modalBody.scrollTop = modalBody.scrollHeight
 }
 
 async function submitComment() {
@@ -264,5 +343,37 @@ async function submitComment() {
   await nameStore.addComment(showCommentsFor.value, commentText.value, replyTo.value || undefined)
   commentText.value = ''
   replyTo.value = null
+}
+
+async function handleDeleteName(name: any) {
+  if (!confirm(`¿Estás seguro de que quieres eliminar "${name.name}"? Esta acción no se puede deshacer.`)) return
+  
+  try {
+    await nameStore.deleteName(name.id)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al eliminar el nombre')
+  }
+}
+
+async function handleExport() {
+  try {
+    const data = await nameStore.exportNames(gid.value)
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ranking-${groupStore.currentGroup?.name || 'baby-names'}-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (error: any) {
+    alert(error.response?.data?.error || 'Error al exportar los nombres')
+  }
+}
+</script>
+
+<script lang="ts">
+import NameDetails from '@/components/NameDetails.vue'
+export default {
+  components: { NameDetails }
 }
 </script>

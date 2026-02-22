@@ -1,7 +1,8 @@
 import { Router, Response } from 'express';
 import { LoginUser } from '../../application/use-cases/LoginUser';
 import { RegisterUser } from '../../application/use-cases/RegisterUser';
-import { GetAllUsers, DeleteUser, GetUserProfile } from '../../application/use-cases/UserUseCases';
+import { GetAllUsers, DeleteUser, GetUserProfile, UpdateUserRole } from '../../application/use-cases/UserUseCases';
+import { ChangePassword, ResetPassword } from '../../application/use-cases/PasswordUseCases';
 import { AuthenticatedRequest, authMiddleware, adminMiddleware } from '../middleware/auth';
 import { MongoUserRepository } from '../../infrastructure/repositories/MongoUserRepository';
 import { UserRole } from '../../domain/entities/User';
@@ -34,6 +35,20 @@ router.get('/users/me', authMiddleware, async (req: AuthenticatedRequest, res: R
   }
 });
 
+// GET /api/users/search?q=...
+router.get('/users/search', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const query = (req.query.q as string || '').trim();
+    if (query.length < 2) {
+      return res.json([]);
+    }
+    const users = await userRepository.search(query, 10);
+    res.json(users.map((u) => u.toJSON()));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // POST /api/users
 router.post('/users', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -41,7 +56,8 @@ router.post('/users', authMiddleware, adminMiddleware, async (req: Authenticated
     const user = await registerUser.execute(
       {
         username: req.body.username,
-        email: req.body.email,
+        firstName: req.body.firstName || '',
+        lastName: req.body.lastName || '',
         password: req.body.password,
         role: req.body.role || UserRole.USER,
       },
@@ -64,12 +80,70 @@ router.get('/users', authMiddleware, adminMiddleware, async (req: AuthenticatedR
   }
 });
 
+// POST /api/users/by-ids
+router.post('/users/by-ids', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const ids: string[] = req.body.ids || [];
+    if (ids.length === 0) return res.json([]);
+    const users = await userRepository.findByIds(ids);
+    res.json(users.map((u) => u.toJSON()));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/users/:id
 router.delete('/users/:id', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const deleteUser = new DeleteUser(userRepository);
     await deleteUser.execute(req.params.id, req.userRole as UserRole);
     res.json({ message: 'User deleted' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/users/:id/reset-password
+router.post('/users/:id/reset-password', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const resetPassword = new ResetPassword(userRepository);
+    await resetPassword.execute(
+      req.params.id,
+      req.body.newPassword,
+      req.userRole as UserRole
+    );
+    res.json({ message: 'Password reset successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST /api/users/me/change-password
+router.post('/users/me/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const changePassword = new ChangePassword(userRepository);
+    await changePassword.execute(
+      req.userId!,
+      req.body.currentPassword,
+      req.body.newPassword
+    );
+    res.json({ message: 'Password changed successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// PATCH /api/users/:id/role
+router.patch('/users/:id/role', authMiddleware, adminMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const updateUserRole = new UpdateUserRole(userRepository);
+    await updateUserRole.execute(
+      req.params.id,
+      req.body.role as UserRole,
+      req.userId!,
+      req.userRole as UserRole
+    );
+    res.json({ message: 'User role updated' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

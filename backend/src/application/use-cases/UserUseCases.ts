@@ -45,3 +45,34 @@ export class GetUserProfile {
     return user;
   }
 }
+
+export class UpdateUserRole {
+  constructor(private userRepository: IUserRepository) {}
+
+  async execute(targetUserId: string, newRole: UserRole, requesterId: string, requesterRole: UserRole): Promise<void> {
+    if (requesterRole !== UserRole.ROOT && requesterRole !== UserRole.ADMIN) {
+      throw new Error('Only admins can change user roles');
+    }
+
+    if (targetUserId === requesterId) {
+      throw new Error('You cannot change your own role');
+    }
+
+    if (newRole === UserRole.ROOT) {
+      throw new Error('Cannot assign root role');
+    }
+
+    const targetUser = await this.userRepository.findById(targetUserId);
+    if (!targetUser) throw new Error('User not found');
+
+    if (targetUser.role === UserRole.ROOT) {
+      throw new Error('Cannot change root user role');
+    }
+
+    if (targetUser.role === UserRole.ADMIN && requesterRole !== UserRole.ROOT) {
+      throw new Error('Only root can change admin roles');
+    }
+
+    await this.userRepository.update(targetUserId, { role: newRole } as any);
+  }
+}
