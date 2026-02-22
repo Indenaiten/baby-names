@@ -10,11 +10,20 @@ interface GroupMember {
   joinedAt: string
 }
 
+export interface FamilyMember {
+  firstName: string
+  lastName1: string
+  lastName2: string
+}
+
 interface Group {
   id: string
   name: string
   ownerId: string
   members: GroupMember[]
+  parents: FamilyMember[]
+  siblings: FamilyMember[]
+  preferredSurnames?: { lastName1: string; lastName2: string }
   closed: boolean
   createdAt: string
 }
@@ -71,8 +80,18 @@ export const useGroupStore = defineStore('group', () => {
     return data
   }
 
-  async function createGroup(name: string) {
-    const { data } = await api.post('/groups', { name })
+  async function createGroup(
+    name: string,
+    parents: FamilyMember[],
+    siblings: FamilyMember[],
+    preferredSurnames: { lastName1: string; lastName2: string }
+  ) {
+    const { data } = await api.post('/groups', {
+      name,
+      parents,
+      siblings,
+      preferredSurnames,
+    })
     groups.value.unshift(data)
     return data
   }
@@ -87,6 +106,23 @@ export const useGroupStore = defineStore('group', () => {
 
   async function closeGroup(groupId: string, closed: boolean) {
     const { data } = await api.put(`/groups/${groupId}/close`, { closed })
+    currentGroup.value = data
+    const idx = groups.value.findIndex((g) => g.id === groupId)
+    if (idx !== -1) groups.value[idx] = data
+    return data
+  }
+
+  async function updateGroupFamilyContext(
+    groupId: string,
+    parents: FamilyMember[],
+    siblings: FamilyMember[],
+    preferredSurnames: { lastName1: string; lastName2: string }
+  ) {
+    const { data } = await api.put(`/groups/${groupId}/family`, {
+      parents,
+      siblings,
+      preferredSurnames,
+    })
     currentGroup.value = data
     const idx = groups.value.findIndex((g) => g.id === groupId)
     if (idx !== -1) groups.value[idx] = data
@@ -165,7 +201,7 @@ export const useGroupStore = defineStore('group', () => {
     groups, currentGroup, loading,
     ownedGroups, invitedGroups, pendingInvitations, memberDetails,
     fetchGroups, fetchGroup, createGroup,
-    renameGroup, closeGroup, deleteGroup,
+    renameGroup, closeGroup, updateGroupFamilyContext, deleteGroup,
     inviteUser, joinGroup, acceptMember, removeMember,
     respondToInvitation, leaveGroup,
     searchUsers, loadMemberDetails, getMemberInfo,

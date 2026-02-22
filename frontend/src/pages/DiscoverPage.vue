@@ -43,7 +43,12 @@
           <span :class="genderBadgeClass(currentName.gender)" class="mb-4 inline-block">
             {{ genderLabel(currentName.gender) }}
           </span>
-          <h2 class="text-4xl font-display font-bold text-white mb-2">{{ currentName.name }}</h2>
+          <h2 class="text-4xl font-display font-bold text-white mb-1">
+            {{ currentName.name }}
+          </h2>
+          <p v-if="getGroupSurnames" class="text-xl text-gray-400 font-medium mb-3">
+            {{ getGroupSurnames }}
+          </p>
           <div class="flex flex-col items-center gap-1">
             <p class="text-[10px] text-gray-500 uppercase tracking-tighter font-bold bg-white/5 px-2 py-0.5 rounded backdrop-blur">
               👤 Propuesto por {{ currentName.proposerName || '...' }}
@@ -101,6 +106,12 @@ const route = useRoute()
 const nameStore = useNameStore()
 const groupStore = useGroupStore()
 const gid = computed(() => route.params.gid as string)
+
+const getGroupSurnames = computed(() => {
+  const surnames = groupStore.currentGroup?.preferredSurnames
+  if (!surnames || (!surnames.lastName1 && !surnames.lastName2)) return ''
+  return `${surnames.lastName1} ${surnames.lastName2}`.trim()
+})
 
 const loading = ref(true)
 const currentIndex = ref(0)

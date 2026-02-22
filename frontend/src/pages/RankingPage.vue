@@ -59,7 +59,10 @@
         <!-- Name info -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="font-semibold text-lg text-white">{{ name.name }}</h3>
+            <h3 class="font-semibold text-lg text-white">
+              {{ name.name }}
+              <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
+            </h3>
             <span :class="genderBadgeClass(name.gender)">
               {{ genderLabel(name.gender) }}
             </span>
@@ -132,7 +135,7 @@
     <!-- Rating modal -->
     <div v-if="ratingModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="ratingModal = null">
       <div class="card w-full max-w-md animate-scale-in">
-        <h2 class="text-xl font-semibold mb-1">Valorar "{{ ratingModal.name }}"</h2>
+        <h2 class="text-xl font-semibold mb-1">Valorar "{{ ratingModal.name }} {{ getGroupSurnames }}"</h2>
         <p class="text-gray-400 text-sm mb-6">Puntuación del 1 al 10</p>
 
         <div class="flex justify-center gap-2 mb-6 flex-wrap">
@@ -165,7 +168,10 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-4 border-b border-gray-800">
           <h3 class="font-bold text-xl text-white">
+          <h3 class="font-bold text-xl text-white">
             {{ nameStore.names.find(n => n.id === showCommentsFor)?.name }}
+            <span v-if="getGroupSurnames" class="text-gray-400 font-normal ml-1">{{ getGroupSurnames }}</span>
+          </h3>
           </h3>
           <button @click="showCommentsFor = null" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 text-gray-400 hover:text-white transition-colors">✕</button>
         </div>
@@ -215,6 +221,12 @@ const groupStore = useGroupStore()
 const authStore = useAuthStore()
 
 const gid = computed(() => route.params.gid as string)
+
+const getGroupSurnames = computed(() => {
+  const surnames = groupStore.currentGroup?.preferredSurnames
+  if (!surnames || (!surnames.lastName1 && !surnames.lastName2)) return ''
+  return `${surnames.lastName1} ${surnames.lastName2}`.trim()
+})
 
 const tabs = [
   { value: '', label: 'Todos', icon: '🌟' },
