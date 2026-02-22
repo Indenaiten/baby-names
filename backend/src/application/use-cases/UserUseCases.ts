@@ -54,7 +54,7 @@ export class UpdateUserRole {
       throw new Error('Only admins can change user roles');
     }
 
-    if (targetUserId === requesterId) {
+    if (targetUserId.toString() === requesterId.toString()) {
       throw new Error('You cannot change your own role');
     }
 
@@ -92,14 +92,22 @@ export class UpdateUser {
       throw new Error('Only root can update root user');
     }
 
-    if (data.username) {
-      const existing = await this.userRepository.findByUsername(data.username);
-      if (existing && existing.id !== userId) {
-        throw new Error('Username already in use');
-      }
+    // Protection: admins cannot update other admins
+    if (user.role === UserRole.ADMIN && requesterRole !== UserRole.ROOT && user.id !== userId) {
+      throw new Error('Only root can update other admin users');
     }
 
-    if (data.firstName !== undefined && data.firstName.trim().length === 0) {
+    if (data.username) {
+      const trimmedUsername = data.username.trim();
+      const existing = await this.userRepository.findByUsername(trimmedUsername);
+      if (existing && existing.id.toString() !== userId.toString()) {
+        throw new Error('Username already in use');
+      }
+      data.username = trimmedUsername;
+    }
+
+    // Relax first name validation: only throw if it's explicitly being cleared and it's a new requirement
+    if (data.firstName !== undefined && data.firstName.trim().length === 0 && user.firstName.length > 0) {
       throw new Error('First name cannot be empty');
     }
 
